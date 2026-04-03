@@ -264,6 +264,29 @@ function formatLabel(s) {
   return `${+m}월 ${+d}일 (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
 }
 
+const LS_KEY = 'golf_bookings_v1';
+const LS_PALETTE_KEY = 'golf_palette_idx_v1';
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(bookingsDB));
+    localStorage.setItem(LS_PALETTE_KEY, String(paletteIdx));
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.screen) bookingsDB.screen = parsed.screen;
+      if (parsed.park) bookingsDB.park = parsed.park;
+    }
+    const pi = localStorage.getItem(LS_PALETTE_KEY);
+    if (pi) paletteIdx = parseInt(pi) || 0;
+  } catch(e) {}
+}
+
 const bookingsDB = { screen: {}, park: {} };
 
 // Boards config
@@ -590,6 +613,7 @@ document.addEventListener('mouseup', e => {
     delete bookingsDB[type][key];
     const newKey = bKey(b.date, bayIdx, start);
     bookingsDB[type][newKey] = { ...b, bayIdx, start, end };
+    saveToStorage();
     refreshTable(type);
     renderCal(type);
   } else {
@@ -721,6 +745,7 @@ document.getElementById('mSave').addEventListener('click', () => {
   const palette = (editKey && bookingsDB[type][editKey]) ? bookingsDB[type][editKey].palette : nextPalette();
   if (editKey) delete bookingsDB[type][editKey];
   bookingsDB[type][bKey(date,bayIdx,start)] = { date, bayIdx, start, end, name, people: document.getElementById('mPeople').value, note: document.getElementById('mNote').value.trim(), palette };
+  saveToStorage();
   refreshTable(type);
   renderCal(type);
   document.getElementById('modalBg').classList.remove('open');
@@ -729,6 +754,7 @@ document.getElementById('mSave').addEventListener('click', () => {
 document.getElementById('mDelete').addEventListener('click', () => {
   const { type, editKey } = modalState;
   if (editKey) delete bookingsDB[type][editKey];
+  saveToStorage();
   refreshTable(type);
   renderCal(type);
   document.getElementById('modalBg').classList.remove('open');
@@ -746,6 +772,7 @@ document.addEventListener('click', e => {
 });
 
 // Init
+loadFromStorage();
 BOARDS.forEach(cfg => buildBoard(cfg));
 BOARDS.forEach(cfg => refreshTable(cfg.type));
 </script>
