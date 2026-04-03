@@ -72,6 +72,22 @@ h1 {
 .board.screen .board-title { color: var(--accent-screen); }
 .board.park .board-title { color: var(--accent-park); }
 
+.header-controls { display: flex; align-items: center; gap: 6px; }
+
+.today-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--text);
+  border: none;
+  border-radius: 5px;
+  padding: 5px 8px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.today-btn:hover { background: #444; }
+
 .date-btn {
   display: flex;
   align-items: center;
@@ -124,12 +140,7 @@ h1 {
 table { border-collapse: collapse; width: 100%; font-size: 12px; }
 th, td { border: 0.5px solid var(--border); text-align: center; padding: 0; }
 
-th.corner { width: 58px; background: var(--bg); position: sticky; left: 0; z-index: 4; }
-th.col-head { background: var(--bg); font-weight: 600; font-size: 11px; color: var(--text); padding: 9px 4px; min-width: 90px; }
-.board.screen th.col-head { color: var(--accent-screen); }
-.board.park th.col-head { color: var(--accent-park); }
-
-td.time-label { background: var(--bg); color: var(--text-muted); font-size: 11px; font-weight: 500; padding: 5px 6px; position: sticky; left: 0; z-index: 2; white-space: nowrap; }
+td.time-label { background: var(--bg); color: var(--text-muted); font-size: 11px; font-weight: 500; padding: 5px 8px 5px 10px; position: sticky; left: 0; z-index: 2; white-space: nowrap; }
 
 td.slot {
   height: 44px;
@@ -143,10 +154,19 @@ td.slot {
 td.slot.empty:hover { background: #f0f6ff; }
 td.slot.drag-over { background: #e8f4e8 !important; outline: 2px dashed #1a7a4a; outline-offset: -2px; }
 td.slot.drag-invalid { background: #fff0f0 !important; outline: 2px dashed #c0392b; outline-offset: -2px; }
+td.slot.select-preview { background: #dbeafe !important; outline: 2px dashed #2563a8; outline-offset: -2px; }
 
 td.slot.booked { cursor: grab; }
 td.slot.booked:active { cursor: grabbing; }
 td.slot.dragging { opacity: 0.4; }
+
+/* Side padding via first/last col */
+th.corner { width: 58px; background: var(--bg); position: sticky; left: 0; z-index: 4; }
+th.col-head { background: var(--bg); font-weight: 600; font-size: 11px; color: var(--text); padding: 9px 4px; min-width: 90px; }
+th.col-pad { width: 10px; background: var(--bg); border: none; }
+td.side-pad { width: 10px; background: var(--bg); border-left: none; border-right: none; padding: 0; }
+.board.screen th.col-head { color: var(--accent-screen); }
+.board.park th.col-head { color: var(--accent-park); }
 
 .slot-content { padding: 5px 5px 2px; }
 .slot-name { font-size: 12px; font-weight: 600; display: block; line-height: 1.3; }
@@ -419,11 +439,31 @@ function buildBoard(cfg) {
   hdr.className = 'board-header';
   const title = document.createElement('div');
   title.className = 'board-title';
-  title.textContent = cfg.title;
+  // Bold just the golf type prefix
+  const boldPart = cfg.type === 'screen' ? '스크린골프' : '파크골프';
+  const restPart = cfg.title.replace(boldPart, '');
+  title.innerHTML = `<strong>${boldPart}</strong>${restPart}`;
   hdr.appendChild(title);
 
   const dateWrap = document.createElement('div');
   dateWrap.style.position = 'relative';
+
+  const controls = document.createElement('div');
+  controls.className = 'header-controls';
+
+  const todayBtn = document.createElement('button');
+  todayBtn.className = 'today-btn';
+  todayBtn.textContent = 'TODAY';
+  todayBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const todayStr = toDateStr(new Date());
+    boardState[cfg.type].date = todayStr;
+    document.getElementById(`dateLabel_${cfg.type}`).textContent = formatLabel(todayStr);
+    refreshTable(cfg.type);
+    renderCal(cfg.type);
+    document.getElementById(`cal_${cfg.type}`).classList.remove('open');
+  });
+  controls.appendChild(todayBtn);
 
   const dateBtn = document.createElement('button');
   dateBtn.className = 'date-btn';
@@ -434,8 +474,9 @@ function buildBoard(cfg) {
   lblSpan.textContent = formatLabel(boardState[cfg.type].date);
   dateBtn.innerHTML = calIco;
   dateBtn.appendChild(lblSpan);
-  dateWrap.appendChild(dateBtn);
+  controls.appendChild(dateBtn);
 
+  dateWrap.appendChild(controls);
   buildCalPopup(cfg.type, container, dateWrap);
   hdr.appendChild(dateWrap);
   container.appendChild(hdr);
@@ -470,6 +511,9 @@ function buildBoard(cfg) {
     th.textContent = bay;
     hRow.appendChild(th);
   });
+  const padTh = document.createElement('th');
+  padTh.className = 'col-pad';
+  hRow.appendChild(padTh);
   thead.appendChild(hRow);
   table.appendChild(thead);
 
@@ -492,6 +536,9 @@ function buildBoard(cfg) {
       attachSlotEvents(td, cfg.type, bayIdx, time, bay);
       row.appendChild(td);
     });
+    const padTd = document.createElement('td');
+    padTd.className = 'side-pad';
+    row.appendChild(padTd);
     tbody.appendChild(row);
   });
   table.appendChild(tbody);
@@ -501,68 +548,80 @@ function buildBoard(cfg) {
 
 function attachSlotEvents(td, type, bayIdx, time, bayName) {
   td.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
     const found = getAt(type, boardState[type].date, bayIdx, time);
     if (found) {
+      // Start move-drag on booked cell
       startDrag(e, type, found.key, found.b, td);
+    } else {
+      // Start select-drag on empty cell
+      startSelectDrag(e, type, bayIdx, time);
     }
   });
   td.addEventListener('click', e => {
     if (drag && drag.moved) return;
+    if (selectDrag && selectDrag.committed) return;
     openModal(type, bayIdx, time, bayName);
   });
 }
 
-// ---- Drag ----
-function startDrag(e, type, key, b, originTd) {
+// ---- Select-drag (draw new reservation) ----
+let selectDrag = null;
+
+function startSelectDrag(e, type, bayIdx, startTime) {
   e.preventDefault();
-  const duration = si(b.end) - si(b.start);
-  const originSlotIdx = si(originTd.dataset.time);
-  const clickOffset = originSlotIdx - si(b.start); // which slot within booking was clicked
-
-  drag = { type, key, b, duration, clickOffset, originTd, moved: false };
-
-  const ghost = document.getElementById('dragGhost');
-  ghost.textContent = `${b.name} (${b.people}명) · ${duration/2}시간`;
-  ghost.style.display = 'block';
-  ghost.style.left = (e.clientX + 12) + 'px';
-  ghost.style.top = (e.clientY - 16) + 'px';
-
-  originTd.classList.add('dragging');
-
-  // Mark all cells of this booking as dragging
-  getDragCells(type, b).forEach(td => td.classList.add('dragging'));
+  selectDrag = { type, bayIdx, startTime, endTime: startTime, moved: false, committed: false };
+  highlightSelectPreview();
 }
 
-function getDragCells(type, b) {
+function highlightSelectPreview() {
+  if (!selectDrag) return;
+  const { type, bayIdx, startTime, endTime } = selectDrag;
+  clearSelectPreview();
+  const si1 = si(startTime), si2 = si(endTime);
+  const from = Math.min(si1, si2), to = Math.max(si1, si2);
   const tbody = document.getElementById(`tbody_${type}`);
-  if (!tbody) return [];
-  const cells = [];
-  const timeSlots = slots.slice(0,-1);
-  const s = si(b.start), e = si(b.end);
+  if (!tbody) return;
   Array.from(tbody.rows).forEach(row => {
-    Array.from(row.cells).slice(1).forEach(td => {
-      const t = si(td.dataset.time);
-      if (parseInt(td.dataset.bay) === b.bayIdx && t >= s && t < e) cells.push(td);
+    Array.from(row.cells).slice(1).forEach(cell => {
+      if (parseInt(cell.dataset.bay) !== bayIdx) return;
+      const ct = si(cell.dataset.time);
+      if (ct >= from && ct <= to) cell.classList.add('select-preview');
     });
   });
-  return cells;
+}
+
+function clearSelectPreview() {
+  document.querySelectorAll('.select-preview').forEach(el => el.classList.remove('select-preview'));
 }
 
 document.addEventListener('mousemove', e => {
+  if (selectDrag) {
+    selectDrag.moved = true;
+    // find slot under cursor
+    const ghost = document.getElementById('dragGhost');
+    ghost.style.display = 'none';
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    ghost.style.display = 'none';
+    const td = el ? el.closest('td.slot') : null;
+    if (td && td.dataset.type === selectDrag.type && parseInt(td.dataset.bay) === selectDrag.bayIdx) {
+      selectDrag.endTime = td.dataset.time;
+      highlightSelectPreview();
+    }
+    return;
+  }
+
   if (!drag) return;
   drag.moved = true;
   const ghost = document.getElementById('dragGhost');
   ghost.style.left = (e.clientX + 12) + 'px';
   ghost.style.top = (e.clientY - 16) + 'px';
 
-  // find cell under cursor
   ghost.style.display = 'none';
   const el = document.elementFromPoint(e.clientX, e.clientY);
   ghost.style.display = 'block';
 
   const td = el ? el.closest('td.slot') : null;
-
-  // clear highlights
   clearDragHighlights();
 
   if (td && td.dataset.type === drag.type) {
@@ -576,7 +635,6 @@ document.addEventListener('mousemove', e => {
       const newEnd = slots[newEndIdx];
       const conflict = hasConflict(drag.type, drag.b.date, targetBay, newStart, newEnd, drag.key);
 
-      // highlight target cells
       const tbody = document.getElementById(`tbody_${drag.type}`);
       Array.from(tbody.rows).forEach(row => {
         Array.from(row.cells).slice(1).forEach(cell => {
@@ -603,6 +661,26 @@ function clearDragHighlights() {
 }
 
 document.addEventListener('mouseup', e => {
+  if (selectDrag) {
+    clearSelectPreview();
+    if (selectDrag.moved) {
+      // Determine start/end from drag direction
+      const si1 = si(selectDrag.startTime), si2 = si(selectDrag.endTime);
+      const fromIdx = Math.min(si1, si2);
+      const toIdx = Math.max(si1, si2) + 1; // end is exclusive (one slot beyond)
+      const start = slots[fromIdx];
+      const end = slots[Math.min(toIdx, slots.length - 1)];
+      selectDrag.committed = true;
+      const capturedType = selectDrag.type;
+      const capturedBay = selectDrag.bayIdx;
+      selectDrag = null;
+      openModalForNew(capturedType, capturedBay, start, end);
+    } else {
+      selectDrag = null;
+    }
+    return;
+  }
+
   if (!drag) return;
   document.getElementById('dragGhost').style.display = 'none';
   clearDragHighlights();
@@ -617,7 +695,6 @@ document.addEventListener('mouseup', e => {
     refreshTable(type);
     renderCal(type);
   } else {
-    // remove dragging class if not moved or no valid preview
     document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
     refreshTable(drag.type);
   }
@@ -625,7 +702,63 @@ document.addEventListener('mouseup', e => {
   drag = null;
 });
 
-// ---- Refresh table ----
+// ---- Drag (move existing booking) ----
+function startDrag(e, type, key, b, originTd) {
+  e.preventDefault();
+  const duration = si(b.end) - si(b.start);
+  const originSlotIdx = si(originTd.dataset.time);
+  const clickOffset = originSlotIdx - si(b.start);
+
+  drag = { type, key, b, duration, clickOffset, originTd, moved: false };
+
+  const ghost = document.getElementById('dragGhost');
+  ghost.textContent = `${b.name} (${b.people}명) · ${duration/2}시간`;
+  ghost.style.display = 'block';
+  ghost.style.left = (e.clientX + 12) + 'px';
+  ghost.style.top = (e.clientY - 16) + 'px';
+
+  originTd.classList.add('dragging');
+  getDragCells(type, b).forEach(td => td.classList.add('dragging'));
+}
+
+function getDragCells(type, b) {
+  const tbody = document.getElementById(`tbody_${type}`);
+  if (!tbody) return [];
+  const s = si(b.start), e = si(b.end);
+  const cells = [];
+  Array.from(tbody.rows).forEach(row => {
+    Array.from(row.cells).slice(1).forEach(td => {
+      const t = si(td.dataset.time);
+      if (parseInt(td.dataset.bay) === b.bayIdx && t >= s && t < e) cells.push(td);
+    });
+  });
+  return cells;
+}
+
+// Open modal pre-filled with drag-selected time range
+function openModalForNew(type, bayIdx, start, end) {
+  const cfg = BOARDS.find(c => c.type === type);
+  modalState = { type, editKey: null };
+  document.getElementById('mTitle').textContent = '예약 입력';
+  document.getElementById('mBayLabel').textContent = type === 'park' ? '타석' : '방';
+  document.getElementById('mDate').value = boardState[type].date;
+  document.getElementById('mErr').style.display = 'none';
+  const baySelect = document.getElementById('mBay');
+  baySelect.innerHTML = '';
+  cfg.bays.forEach((bn, i) => { const o=document.createElement('option'); o.value=i; o.textContent=bn; baySelect.appendChild(o); });
+  baySelect.value = bayIdx;
+  populateTimeSelects(start);
+  document.getElementById('mEnd').value = end;
+  updateEndOpts();
+  document.getElementById('mName').value = '';
+  document.getElementById('mPeople').value = '2';
+  document.getElementById('mNote').value = '';
+  document.getElementById('mDelete').style.display = 'none';
+  document.getElementById('modalBg').classList.add('open');
+  setTimeout(() => document.getElementById('mName').focus(), 50);
+}
+
+
 function refreshTable(type) {
   const tbody = document.getElementById(`tbody_${type}`);
   if (!tbody) return;
