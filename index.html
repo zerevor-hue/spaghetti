@@ -91,7 +91,19 @@ h1 {
   white-space: nowrap;
   touch-action: manipulation;
 }
-.today-btn:hover { background: #444; }
+.day-nav-btn {
+  background: var(--bg);
+  border: 0.5px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.day-nav-btn:hover { background: #e4e4de; }
 
 .date-btn {
   display: flex;
@@ -152,8 +164,8 @@ h1 {
   -webkit-overflow-scrolling: touch;
 }
 
-table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 320px; }
-th, td { border: 0.5px solid rgba(0,0,0,0.08); text-align: center; padding: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 320px; table-layout: fixed; }
+th, td { border: 0.5px solid rgba(0,0,0,0.08); text-align: center; padding: 0; overflow: hidden; }
 
 /* Remove outer borders so rounded container shows cleanly */
 table > thead > tr > th:first-child,
@@ -167,15 +179,21 @@ th.corner { width: 62px; background: #fff; position: sticky; left: 0; z-index: 4
 th.col-head { background: #fafafa; font-weight: 800; font-size: 13px; padding: 11px 4px; min-width: 86px; border-top: none; }
 th.col-pad { display: none; }
 td.side-pad { display: none; }
+.board.screen { background: #F5FAFF; }
+.board.park { background: #F4FCF7; }
+.board.screen .board-header { background: #F5FAFF; border-bottom-color: rgba(37,99,168,0.1); }
+.board.park .board-header { background: #F4FCF7; border-bottom-color: rgba(26,122,74,0.1); }
+.board.screen .table-wrap { background: #fff; border-color: rgba(37,99,168,0.12); }
+.board.park .table-wrap { background: #fff; border-color: rgba(26,122,74,0.12); }
 .board.screen th.col-head { color: var(--accent-screen); }
 .board.park th.col-head { color: var(--accent-park); }
 
 td.time-label {
   background: #fafafa;
   color: #444;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 5px 12px;
+  padding: 3px 12px;
   position: sticky;
   left: 0;
   z-index: 2;
@@ -183,7 +201,7 @@ td.time-label {
 }
 
 td.slot {
-  height: 42px;
+  height: 22px;
   cursor: pointer;
   vertical-align: top;
   background: #fff;
@@ -191,7 +209,27 @@ td.slot {
   position: relative;
   user-select: none;
   touch-action: none;
+  overflow: visible;
 }
+td.slot.booked { overflow: visible; }
+
+.slot-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 4px 4px;
+  z-index: 3;
+  pointer-events: none;
+  text-align: center;
+  overflow: hidden;
+  border-radius: 3px;
+}
+.slot-time { font-size: 12px; font-weight: 700; display: block; line-height: 1.6; opacity: 0.9; white-space: nowrap; }
+.slot-main { font-size: 14px; font-weight: 800; display: block; line-height: 1.5; white-space: nowrap; }
+.slot-sub { font-size: 12px; font-weight: 700; display: block; opacity: 0.85; line-height: 1.5; white-space: nowrap; }
+.slot-memo { font-size: 11px; font-weight: 600; display: block; opacity: 0.75; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 td.slot.empty:hover { background: #f0f6ff; }
 td.slot.drag-over { background: #e8f4e8 !important; outline: 2px dashed #1a7a4a; outline-offset: -2px; }
 td.slot.drag-invalid { background: #fff0f0 !important; outline: 2px dashed #c0392b; outline-offset: -2px; }
@@ -199,10 +237,6 @@ td.slot.select-preview { background: #dbeafe !important; outline: 2px dashed #25
 td.slot.booked { cursor: grab; }
 td.slot.booked:active { cursor: grabbing; }
 td.slot.dragging { opacity: 0.4; }
-
-.slot-content { padding: 4px 5px 2px; }
-.slot-name { font-size: 12px; font-weight: 800; display: block; line-height: 1.3; }
-.slot-people { font-size: 11px; font-weight: 700; display: block; opacity: 0.85; }
 
 /* Modal */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 12px; }
@@ -249,45 +283,89 @@ td.slot.dragging { opacity: 0.4; }
 
 /* Mobile */
 @media (max-width: 640px) {
-  body { padding: 12px 8px 32px; }
-  h1 { font-size: 16px; margin-bottom: 12px; }
-  .boards { gap: 12px; }
+  body { padding: 10px 6px 32px; }
+  h1 { font-size: 15px; margin-bottom: 10px; }
+  .boards { gap: 10px; flex-direction: column; }
   .board { min-width: 0; width: 100%; flex: none; }
-  .table-wrap { margin: 8px; border-radius: 8px; }
-  th.col-head { min-width: 68px; font-size: 10px; padding: 8px 2px; }
-  td.time-label { font-size: 10px; padding: 4px 7px; }
-  td.slot { height: 38px; }
-  .slot-name { font-size: 11px; }
-  .board-header { padding: 9px 11px; }
+  .table-wrap { margin: 6px; border-radius: 8px; }
+  th.col-head { min-width: 60px; font-size: 11px; padding: 8px 2px; }
+  td.time-label { font-size: 10px; padding: 3px 6px; }
+  td.slot { height: 20px; }
+  .slot-time { font-size: 10px; }
+  .slot-main { font-size: 11px; }
+  .slot-sub, .slot-memo { font-size: 10px; }
+  .board-header { padding: 8px 10px; flex-wrap: wrap; gap: 5px; }
   .board-title { font-size: 12px; }
+  .board-title strong { font-size: 14px; }
+  .date-btn { font-size: 11px; padding: 4px 7px; }
+  .today-btn { font-size: 10px; padding: 4px 6px; }
+  .day-nav-btn { padding: 3px 7px; font-size: 16px; }
+  .modal { padding: 16px; }
+  .modal input, .modal select, .modal textarea { font-size: 16px; } /* prevent zoom on iOS */
+  th.corner { width: 48px; }
 }
 </style>
 </head>
 <body>
-<h1>예약 관리 시스템</h1>
+<h1>예약 관리 시스템 <span id="syncStatus" style="font-size:12px;font-weight:500;color:#aaa;margin-left:8px;">연결 중...</span></h1>
 <div class="boards">
   <div class="board screen" id="boardScreen"></div>
   <div class="board park" id="boardPark"></div>
 </div>
 
+<!-- 로딩 오버레이 -->
+<div id="loadingOverlay" style="
+  position:fixed; inset:0; background:rgba(255,255,255,0.88);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:9999; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
+  <div style="width:36px;height:36px;border:3px solid #ddd;border-top-color:#1a7a4a;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <p style="margin-top:14px;font-size:14px;font-weight:600;color:#555;">데이터 불러오는 중...</p>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+
 <div class="modal-bg" id="modalBg">
   <div class="modal">
-    <h3 id="mTitle">예약 입력</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h3 id="mTitle" style="margin-bottom:0;">예약 입력</h3>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="margin:0;font-size:12px;font-weight:700;color:var(--text-muted);">담당자</label>
+        <select id="mManager" style="width:auto;padding:6px 8px;font-size:13px;font-weight:700;">
+          <option value="">선택</option>
+          <option value="__new__">+ 직접 입력</option>
+        </select>
+      </div>
+    </div>
+    <div id="mManagerCustomWrap" style="display:none;margin-bottom:10px;">
+      <input type="text" id="mManagerCustom" placeholder="담당자 이름 입력 후 Enter" style="font-size:13px;"/>
+    </div>
     <label>날짜</label><input type="date" id="mDate"/>
     <label id="mBayLabel">방</label>
     <select id="mBay"></select>
     <label>시간</label>
     <div class="time-row">
-      <div class="ts"><div style="font-size:10px;color:#999;margin-bottom:3px;">시작</div><select id="mStart"></select></div>
+      <div class="ts"><div style="font-size:10px;color:#999;margin-bottom:3px;font-weight:700;">시작</div><select id="mStart"></select></div>
       <div class="arrow">→</div>
-      <div class="ts"><div style="font-size:10px;color:#999;margin-bottom:3px;">종료</div><select id="mEnd"></select></div>
+      <div class="ts"><div style="font-size:10px;color:#999;margin-bottom:3px;font-weight:700;">종료</div><select id="mEnd"></select></div>
     </div>
     <div class="err-box" id="mErr"></div>
-    <label>예약자 이름</label><input type="text" id="mName" placeholder="홍길동"/>
+    <label>예약자 정보</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="mName" placeholder="이름" style="flex:1;min-width:0;"/>
+      <input type="tel" id="mPhone" placeholder="연락처" style="flex:1.4;min-width:0;"/>
+    </div>
     <label>인원</label>
     <select id="mPeople">
       <option value="1">1명</option><option value="2" selected>2명</option>
       <option value="3">3명</option><option value="4">4명</option>
+      <option value="5">5명</option><option value="6">6명</option>
+      <option value="7">7명</option><option value="8">8명</option>
+    </select>
+    <label>홀 단위</label>
+    <select id="mHole">
+      <option value="9홀">9홀</option>
+      <option value="18홀" selected>18홀</option>
+      <option value="포섬">포섬</option>
+      <option value="포볼">포볼</option>
     </select>
     <label>메모 (선택)</label><textarea id="mNote" rows="2" placeholder="특이사항 등"></textarea>
     <div class="modal-btns">
@@ -300,25 +378,105 @@ td.slot.dragging { opacity: 0.4; }
 
 <div class="drag-ghost" id="dragGhost"></div>
 
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDWHBf0wUme5xbbxD8ShjH341ZWYEYHvBQ",
+  authDomain: "golf-67d3b.firebaseapp.com",
+  databaseURL: "https://golf-67d3b-default-rtdb.firebaseio.com",
+  projectId: "golf-67d3b",
+  storageBucket: "golf-67d3b.firebasestorage.app",
+  messagingSenderId: "874950944467",
+  appId: "1:874950944467:web:f409def04d0b1ad9d45626"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+// Firebase 저장
+window.fbSave = function(type, key, data) {
+  const safKey = key.replace(/\./g, '_');
+  set(ref(db, `bookings/${type}/${safKey}`), data).catch(e => console.warn('FB 저장 실패:', e));
+};
+window.fbDelete = function(type, key) {
+  const safKey = key.replace(/\./g, '_');
+  remove(ref(db, `bookings/${type}/${safKey}`)).catch(e => console.warn('FB 삭제 실패:', e));
+};
+
+// Firebase 실시간 수신 — Firebase가 유일한 데이터 소스
+let fbInitialized = false;
+onValue(ref(db, 'bookings'), snapshot => {
+  const data = snapshot.val();
+  bookingsDB.screen = {};
+  bookingsDB.park = {};
+  if (data) {
+    ['screen','park'].forEach(type => {
+      if (!data[type]) return;
+      Object.values(data[type]).forEach(val => {
+        if (val && val._key) {
+          const { _key, ...rest } = val;
+          bookingsDB[type][_key] = rest;
+        }
+      });
+    });
+  }
+  ['screen','park'].forEach(type => {
+    if (typeof refreshTable === 'function') refreshTable(type);
+    if (typeof renderCal === 'function') renderCal(type);
+  });
+  document.getElementById('syncStatus').textContent = '✓ 동기화됨';
+  document.getElementById('syncStatus').style.color = '#1a7a4a';
+
+  // 첫 수신 시 로딩 오버레이 제거
+  if (!fbInitialized) {
+    fbInitialized = true;
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+}, err => {
+  document.getElementById('syncStatus').textContent = '⚠ 연결 실패 — 새로고침 해주세요';
+  document.getElementById('syncStatus').style.color = '#c0392b';
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.querySelector('p').textContent = '연결 실패 — 네트워크를 확인해주세요';
+    overlay.querySelector('div').style.borderTopColor = '#c0392b';
+  }
+});
+</script>
+
 <script>
-const PASTEL = [
-  {bg:'#FADADD',border:'#C97A85',text:'#7A3040'},
-  {bg:'#D4F1F4',border:'#5AACB8',text:'#1E6470'},
-  {bg:'#D5E8D4',border:'#6BAA6A',text:'#2E5E2D'},
-  {bg:'#FFF2CC',border:'#D6B656',text:'#7A5C00'},
-  {bg:'#DAE8FC',border:'#6C9FD8',text:'#1E4D7A'},
-  {bg:'#E1D5E7',border:'#9B72B0',text:'#4B2B6B'},
-  {bg:'#FFE6CC',border:'#D79B4A',text:'#7A4500'},
-  {bg:'#F8CECC',border:'#C4706A',text:'#6B2020'},
+// 스크린골프: 하늘색 계열 / 파크골프: 초록색 계열 파스텔
+const PALETTE_SCREEN = [
+  {bg:'#DAEEFF',text:'#1a4a6e'},
+  {bg:'#C8E8FF',text:'#153d5c'},
+  {bg:'#D4F0FF',text:'#1a4a6e'},
+  {bg:'#BFE4FF',text:'#0f3350'},
+  {bg:'#E0F4FF',text:'#1a4a6e'},
 ];
-let paletteIdx = 0;
-function nextPalette() { return PASTEL[paletteIdx++ % PASTEL.length]; }
+const PALETTE_PARK = [
+  {bg:'#C8EDCC',text:'#1a4d22'},
+  {bg:'#B8E6BC',text:'#144018'},
+  {bg:'#CBEDD0',text:'#1a4d22'},
+  {bg:'#A8DFB0',text:'#0f3314'},
+  {bg:'#D4F0D8',text:'#1a4d22'},
+];
+const paletteIdx = { screen: 0, park: 0 };
+function nextPalette(type) {
+  const arr = type === 'park' ? PALETTE_PARK : PALETTE_SCREEN;
+  const p = arr[paletteIdx[type] % arr.length];
+  paletteIdx[type]++;
+  return p;
+}
 
 const START_H = 9, END_H = 22;
 const slots = [];
 for (let h = START_H; h < END_H; h++) {
-  slots.push(`${String(h).padStart(2,'0')}:00`);
-  slots.push(`${String(h).padStart(2,'0')}:30`);
+  for (let m = 0; m < 60; m += 10) {
+    slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+  }
 }
 slots.push('22:00');
 function si(t) { return slots.indexOf(t); }
@@ -332,35 +490,62 @@ function formatLabel(s) {
   return `${+m}월 ${+d}일 (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
 }
 
-const LS_KEY = 'golf_bookings_v1';
-const LS_PALETTE_KEY = 'golf_palette_idx_v1';
-
-function saveToStorage() {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(bookingsDB));
-    localStorage.setItem(LS_PALETTE_KEY, String(paletteIdx));
-  } catch(e) {}
+function shiftDate(type, delta) {
+  const [y,m,d] = boardState[type].date.split('-').map(Number);
+  const dt = new Date(y, m-1, d + delta);
+  const ds = toDateStr(dt);
+  boardState[type].date = ds;
+  document.getElementById(`dateLabel_${type}`).textContent = formatLabel(ds);
+  refreshTable(type);
+  const popup = document.getElementById(`cal_${type}`);
+  if (popup.classList.contains('open')) {
+    boardState[type].calYear = dt.getFullYear();
+    boardState[type].calMonth = dt.getMonth();
+    renderCal(type);
+  }
 }
 
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.screen) bookingsDB.screen = parsed.screen;
-      if (parsed.park) bookingsDB.park = parsed.park;
-    }
-    const pi = localStorage.getItem(LS_PALETTE_KEY);
-    if (pi) paletteIdx = parseInt(pi) || 0;
-  } catch(e) {}
+// Manager persist (localStorage) — 담당자 목록만 로컬 저장 (예약 데이터 X)
+const LS_MANAGER_KEY = 'golf_last_manager_v1';
+const LS_MANAGER_LIST_KEY = 'golf_manager_list_v1';
+
+function getSavedManager() { try { return localStorage.getItem(LS_MANAGER_KEY) || ''; } catch(e) { return ''; } }
+function saveManager(val) { try { localStorage.setItem(LS_MANAGER_KEY, val); } catch(e) {} }
+function getManagerList() { try { return JSON.parse(localStorage.getItem(LS_MANAGER_LIST_KEY) || '[]'); } catch(e) { return []; } }
+function addToManagerList(name) {
+  if (!name) return;
+  const list = getManagerList();
+  if (!list.includes(name)) { list.push(name); localStorage.setItem(LS_MANAGER_LIST_KEY, JSON.stringify(list)); }
 }
 
+function rebuildManagerSelect(selectedVal) {
+  const sel = document.getElementById('mManager');
+  const list = getManagerList();
+  sel.innerHTML = '<option value="">선택</option>';
+  list.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  const addOpt = document.createElement('option'); addOpt.value = '__new__'; addOpt.textContent = '+ 직접 입력'; sel.appendChild(addOpt);
+  sel.value = (selectedVal && list.includes(selectedVal)) ? selectedVal : '';
+}
 const bookingsDB = { screen: {}, park: {} };
+
+// Firebase 전용 저장 — 로컬 캐시 없음
+function saveToStorage(type, key, data) {
+  if (data === null) {
+    if (window.fbDelete) window.fbDelete(type, key);
+  } else {
+    if (window.fbSave) window.fbSave(type, key, { ...data, _key: key });
+  }
+  document.getElementById('syncStatus').textContent = '↑ 저장 중...';
+  document.getElementById('syncStatus').style.color = '#888';
+}
+
+// loadFromStorage는 Firebase onValue가 대신하므로 빈 함수
+function loadFromStorage() {}
 
 // Boards config
 const BOARDS = [
   { id: 'boardScreen', type: 'screen', title: '스크린골프 예약 현황', bays: ['1번 방','3번 방','5번 방','7번 방'], accentClass: 'screen' },
-  { id: 'boardPark', type: 'park', title: '파크골프 예약 현황', bays: ['1번 타석','3번 타석','5번 타석','7번 타석'], accentClass: 'park' },
+  { id: 'boardPark', type: 'park', title: '파크골프 예약 현황', bays: ['1번 타석','2번 타석','3번 타석','4번 타석'], accentClass: 'park' },
 ];
 
 const boardState = { screen: { date: toDateStr(new Date()), calYear:0, calMonth:0 }, park: { date: toDateStr(new Date()), calYear:0, calMonth:0 } };
@@ -513,6 +698,17 @@ function buildBoard(cfg) {
   });
   controls.appendChild(todayBtn);
 
+  // Prev day button
+  const prevDayBtn = document.createElement('button');
+  prevDayBtn.className = 'day-nav-btn';
+  prevDayBtn.innerHTML = '&#8249;';
+  prevDayBtn.title = '전날';
+  prevDayBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    shiftDate(cfg.type, -1);
+  });
+  controls.appendChild(prevDayBtn);
+
   const dateBtn = document.createElement('button');
   dateBtn.className = 'date-btn';
   dateBtn.id = `dateBtn_${cfg.type}`;
@@ -523,6 +719,17 @@ function buildBoard(cfg) {
   dateBtn.innerHTML = calIco;
   dateBtn.appendChild(lblSpan);
   controls.appendChild(dateBtn);
+
+  // Next day button
+  const nextDayBtn = document.createElement('button');
+  nextDayBtn.className = 'day-nav-btn';
+  nextDayBtn.innerHTML = '&#8250;';
+  nextDayBtn.title = '다음날';
+  nextDayBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    shiftDate(cfg.type, +1);
+  });
+  controls.appendChild(nextDayBtn);
 
   dateWrap.appendChild(controls);
   buildCalPopup(cfg.type, container, dateWrap);
@@ -547,7 +754,7 @@ function buildBoard(cfg) {
   const table = document.createElement('table');
   table.id = `table_${cfg.type}`;
 
-  // thead
+  // thead - no col-pad
   const thead = document.createElement('thead');
   const hRow = document.createElement('tr');
   const corner = document.createElement('th');
@@ -559,34 +766,52 @@ function buildBoard(cfg) {
     th.textContent = bay;
     hRow.appendChild(th);
   });
-  const padTh = document.createElement('th');
-  padTh.className = 'col-pad';
-  hRow.appendChild(padTh);
   thead.appendChild(hRow);
   table.appendChild(thead);
 
-  // tbody
+  // tbody - include 22:00 as display-only row
   const tbody = document.createElement('tbody');
   tbody.id = `tbody_${cfg.type}`;
-  slots.slice(0,-1).forEach(time => {
+  const displaySlots = slots.slice(0,-1).concat(['22:00']);
+  displaySlots.forEach((time, rowIdx) => {
+    const isLast = (time === '22:00');
     const row = document.createElement('tr');
     const lbl = document.createElement('td');
     lbl.className = 'time-label';
+    const isHour = time.endsWith(':00');
+    const isHalf = time.endsWith(':30');
+    const isEmphasis = isHour || isHalf;
     lbl.textContent = time;
+    if (isEmphasis) {
+      lbl.style.fontWeight = '800';
+      lbl.style.fontSize = '12px';
+      lbl.style.color = '#222';
+    } else {
+      lbl.style.fontWeight = '500';
+      lbl.style.fontSize = '10px';
+      lbl.style.color = '#999';
+    }
+    if (isHour) row.style.borderTop = '1px solid rgba(0,0,0,0.1)';
+    if (isHalf) row.style.borderTop = '1px solid rgba(0,0,0,0.05)';
     row.appendChild(lbl);
     cfg.bays.forEach((bay, bayIdx) => {
       const td = document.createElement('td');
-      td.className = 'slot empty';
-      td.dataset.type = cfg.type;
-      td.dataset.bay = bayIdx;
-      td.dataset.time = time;
-      td.dataset.bayName = bay;
-      attachSlotEvents(td, cfg.type, bayIdx, time, bay);
+      td.className = isLast ? 'slot empty' : 'slot empty';
+      if (!isLast) {
+        td.dataset.type = cfg.type;
+        td.dataset.bay = bayIdx;
+        td.dataset.time = time;
+        td.dataset.bayName = bay;
+        if (isHour) td.style.borderTop = '1px solid rgba(0,0,0,0.1)';
+        if (isHalf) td.style.borderTop = '1px solid rgba(0,0,0,0.05)';
+        attachSlotEvents(td, cfg.type, bayIdx, time, bay);
+      } else {
+        td.style.cursor = 'default';
+        td.style.background = '#fafafa';
+        if (isHour) td.style.borderTop = '1px solid rgba(0,0,0,0.1)';
+      }
       row.appendChild(td);
     });
-    const padTd = document.createElement('td');
-    padTd.className = 'side-pad';
-    row.appendChild(padTd);
     tbody.appendChild(row);
   });
   table.appendChild(tbody);
@@ -595,22 +820,28 @@ function buildBoard(cfg) {
 }
 
 function attachSlotEvents(td, type, bayIdx, time, bayName) {
+  // Mouse events (PC)
   td.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     const found = getAt(type, boardState[type].date, bayIdx, time);
-    if (found) {
-      // Start move-drag on booked cell
-      startDrag(e, type, found.key, found.b, td);
-    } else {
-      // Start select-drag on empty cell
-      startSelectDrag(e, type, bayIdx, time);
-    }
+    if (found) startDrag(e, type, found.key, found.b, td);
+    else startSelectDrag(e, type, bayIdx, time);
   });
   td.addEventListener('click', e => {
     if (drag && drag.moved) return;
     if (selectDrag && selectDrag.committed) return;
     openModal(type, bayIdx, time, bayName);
   });
+
+  // Touch events (Mobile)
+  td.addEventListener('touchstart', e => {
+    const found = getAt(type, boardState[type].date, bayIdx, time);
+    if (found) {
+      startDragTouch(e, type, found.key, found.b, td);
+    } else {
+      startSelectDragTouch(e, type, bayIdx, time);
+    }
+  }, { passive: false });
 }
 
 // ---- Select-drag (draw new reservation) ----
@@ -736,10 +967,12 @@ document.addEventListener('mouseup', e => {
   if (drag.moved && drag.preview) {
     const { type, key, b } = drag;
     const { bayIdx, start, end } = drag.preview;
+    saveToStorage(type, key, null);
     delete bookingsDB[type][key];
     const newKey = bKey(b.date, bayIdx, start);
-    bookingsDB[type][newKey] = { ...b, bayIdx, start, end };
-    saveToStorage();
+    const newData = { ...b, bayIdx, start, end };
+    bookingsDB[type][newKey] = newData;
+    saveToStorage(type, newKey, newData);
     refreshTable(type);
     renderCal(type);
   } else {
@@ -783,6 +1016,116 @@ function getDragCells(type, b) {
   return cells;
 }
 
+// Touch helpers
+function getTdAtPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest('td.slot') : null;
+}
+
+function startDragTouch(e, type, key, b, originTd) {
+  e.preventDefault();
+  const t = e.touches[0];
+  const duration = si(b.end) - si(b.start);
+  const clickOffset = si(originTd.dataset.time) - si(b.start);
+  drag = { type, key, b, duration, clickOffset, originTd, moved: false };
+  originTd.classList.add('dragging');
+  getDragCells(type, b).forEach(td => td.classList.add('dragging'));
+
+  originTd.addEventListener('touchmove', onTouchMoveDrag, { passive: false });
+  originTd.addEventListener('touchend', onTouchEndDrag);
+}
+
+function onTouchMoveDrag(e) {
+  e.preventDefault();
+  if (!drag) return;
+  drag.moved = true;
+  const t = e.touches[0];
+  clearDragHighlights();
+  const td = getTdAtPoint(t.clientX, t.clientY);
+  if (td && td.dataset.type === drag.type) {
+    const targetBay = parseInt(td.dataset.bay);
+    const newStartIdx = si(td.dataset.time) - drag.clickOffset;
+    const newEndIdx = newStartIdx + drag.duration;
+    if (newStartIdx >= 0 && newEndIdx < slots.length) {
+      const newStart = slots[newStartIdx], newEnd = slots[newEndIdx];
+      const conflict = hasConflict(drag.type, drag.b.date, targetBay, newStart, newEnd, drag.key);
+      const tbody = document.getElementById(`tbody_${drag.type}`);
+      Array.from(tbody.rows).forEach(row => {
+        Array.from(row.cells).slice(1).forEach(cell => {
+          const ci = si(cell.dataset.time);
+          if (parseInt(cell.dataset.bay) === targetBay && ci >= newStartIdx && ci < newEndIdx)
+            cell.classList.add(conflict ? 'drag-invalid' : 'drag-over');
+        });
+      });
+      drag.preview = conflict ? null : { bayIdx: targetBay, start: newStart, end: newEnd };
+    } else { drag.preview = null; }
+  } else { drag.preview = null; }
+}
+
+function onTouchEndDrag(e) {
+  if (!drag) return;
+  this.removeEventListener('touchmove', onTouchMoveDrag);
+  this.removeEventListener('touchend', onTouchEndDrag);
+  clearDragHighlights();
+  if (drag.moved && drag.preview) {
+    const { type, key, b } = drag;
+    const { bayIdx, start, end } = drag.preview;
+    saveToStorage(type, key, null);
+    delete bookingsDB[type][key];
+    const newKey = bKey(b.date, bayIdx, start);
+    const newData = { ...b, bayIdx, start, end };
+    bookingsDB[type][newKey] = newData;
+    saveToStorage(type, newKey, newData);
+    refreshTable(type);
+    renderCal(type);
+  } else {
+    document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+    refreshTable(drag.type);
+  }
+  drag = null;
+}
+
+function startSelectDragTouch(e, type, bayIdx, startTime) {
+  e.preventDefault();
+  selectDrag = { type, bayIdx, startTime, endTime: startTime, moved: false, committed: false };
+  highlightSelectPreview();
+
+  const handler = e2 => {
+    e2.preventDefault();
+    selectDrag.moved = true;
+    const t = e2.touches[0];
+    const td = getTdAtPoint(t.clientX, t.clientY);
+    if (td && td.dataset.type === selectDrag.type && parseInt(td.dataset.bay) === selectDrag.bayIdx) {
+      selectDrag.endTime = td.dataset.time;
+      highlightSelectPreview();
+    }
+  };
+  const endHandler = () => {
+    document.removeEventListener('touchmove', handler);
+    document.removeEventListener('touchend', endHandler);
+    clearSelectPreview();
+    if (selectDrag && selectDrag.moved) {
+      const si1 = si(selectDrag.startTime), si2 = si(selectDrag.endTime);
+      const fromIdx = Math.min(si1, si2);
+      const toIdx = Math.max(si1, si2) + 1;
+      const start = slots[fromIdx];
+      const end = slots[Math.min(toIdx, slots.length - 1)];
+      selectDrag.committed = true;
+      const capturedType = selectDrag.type, capturedBay = selectDrag.bayIdx;
+      selectDrag = null;
+      openModalForNew(capturedType, capturedBay, start, end);
+    } else {
+      if (selectDrag) {
+        const { type: t2, bayIdx: bi2 } = selectDrag;
+        selectDrag = null;
+        openModal(t2, bi2, startTime, '');
+      }
+    }
+  };
+  document.addEventListener('touchmove', handler, { passive: false });
+  document.addEventListener('touchend', endHandler);
+}
+
 // Open modal pre-filled with drag-selected time range
 function openModalForNew(type, bayIdx, start, end) {
   const cfg = BOARDS.find(c => c.type === type);
@@ -799,8 +1142,15 @@ function openModalForNew(type, bayIdx, start, end) {
   document.getElementById('mEnd').value = end;
   updateEndOpts();
   document.getElementById('mName').value = '';
+  document.getElementById('mPhone').value = '';
   document.getElementById('mPeople').value = '2';
+  document.getElementById('mHole').value = '18홀';
   document.getElementById('mNote').value = '';
+
+  const savedMgr = getSavedManager();
+  rebuildManagerSelect(savedMgr);
+  document.getElementById('mManagerCustomWrap').style.display = 'none';
+
   document.getElementById('mDelete').style.display = 'none';
   document.getElementById('modalBg').classList.add('open');
   setTimeout(() => document.getElementById('mName').focus(), 50);
@@ -818,22 +1168,30 @@ function refreshTable(type) {
     Array.from(row.cells).slice(1).forEach((td, bi) => {
       const found = getAt(type, date, bi, time);
       if (found) {
-        const b = found.b, p = b.palette;
+        const b = found.b;
+        // 팔레트 없거나 구형 데이터면 타입에 맞게 기본값 적용
+        const p = b.palette || nextPalette(type);
         td.className = 'slot booked';
         td.style.background = p.bg;
-        td.style.borderColor = p.bg;
+        td.style.borderColor = 'rgba(0,0,0,0.08)';
         const isStart = (time === b.start);
+        const duration = si(b.end) - si(b.start);
+        const totalHeight = duration * 22;
         if (isStart) {
-          td.style.borderTopColor = p.border;
-          td.style.borderTopWidth = '2px';
-          td.innerHTML = `<div class="slot-content"><span class="slot-name" style="color:${p.text}">${b.name}</span><span class="slot-people" style="color:${p.text}">${b.people}명</span></div>`;
+          td.style.overflow = 'visible';
+          td.style.position = 'relative';
+          td.style.zIndex = '3';
+          const memoLine = b.note ? `<span class="slot-memo" style="color:${p.text}">📝 ${b.note}</span>` : '';
+          td.innerHTML = `<div class="slot-content" style="height:${totalHeight}px;background:${p.bg};border:1.5px solid rgba(0,0,0,0.45);border-radius:4px;pointer-events:none;">
+            <span class="slot-time" style="color:${p.text}">${b.start} ~ ${b.end}</span>
+            <span class="slot-main" style="color:${p.text}">${b.name} ${b.people}명</span>
+            <span class="slot-sub" style="color:${p.text}">${b.hole||''}</span>
+            ${memoLine}
+          </div>`;
         } else {
+          td.style.overflow = 'visible';
+          td.style.position = 'relative';
           td.innerHTML = '';
-        }
-        const lastIdx = si(b.end) - 1;
-        if (ti === lastIdx - si(slots[0]) + si(timeSlots[0]) || time === timeSlots[si(b.end)-1]) {
-          td.style.borderBottomColor = p.border;
-          td.style.borderBottomWidth = '2px';
         }
       } else {
         td.className = 'slot empty';
@@ -877,8 +1235,16 @@ function openModal(type, bayIdx, time, bayName) {
   updateEndOpts();
 
   document.getElementById('mName').value = b ? b.name : '';
+  document.getElementById('mPhone').value = b ? (b.phone||'') : '';
   document.getElementById('mPeople').value = b ? b.people : '2';
+  document.getElementById('mHole').value = b ? (b.hole||'18홀') : '18홀';
   document.getElementById('mNote').value = b ? (b.note||'') : '';
+
+  // Manager
+  const mgr = b ? (b.manager||'') : getSavedManager();
+  rebuildManagerSelect(mgr);
+  document.getElementById('mManagerCustomWrap').style.display = 'none';
+
   document.getElementById('mDelete').style.display = b ? 'block' : 'none';
   document.getElementById('modalBg').classList.add('open');
   setTimeout(() => document.getElementById('mName').focus(), 50);
@@ -906,13 +1272,43 @@ function updateEndOpts() {
 
 document.getElementById('mStart').addEventListener('change', updateEndOpts);
 
+document.getElementById('mManager').addEventListener('change', function() {
+  if (this.value === '__new__') {
+    document.getElementById('mManagerCustomWrap').style.display = 'block';
+    document.getElementById('mManagerCustom').value = '';
+    setTimeout(() => document.getElementById('mManagerCustom').focus(), 30);
+  } else {
+    document.getElementById('mManagerCustomWrap').style.display = 'none';
+    document.getElementById('mManagerCustom').value = '';
+    if (this.value) saveManager(this.value);
+  }
+});
+
+document.getElementById('mManagerCustom').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const name = this.value.trim();
+    if (!name) return;
+    addToManagerList(name);
+    saveManager(name);
+    rebuildManagerSelect(name);
+    document.getElementById('mManagerCustomWrap').style.display = 'none';
+    this.value = '';
+  }
+});
+
 document.getElementById('mSave').addEventListener('click', () => {
   const { type, editKey } = modalState;
   const name = document.getElementById('mName').value.trim();
+  const phone = document.getElementById('mPhone').value.trim();
   const date = document.getElementById('mDate').value;
   const bayIdx = parseInt(document.getElementById('mBay').value);
   const start = document.getElementById('mStart').value;
   const end = document.getElementById('mEnd').value;
+  const hole = document.getElementById('mHole').value;
+  const mgrSel = document.getElementById('mManager');
+  const manager = mgrSel.value === '__new__'
+    ? document.getElementById('mManagerCustom').value.trim()
+    : mgrSel.value;
   const errEl = document.getElementById('mErr');
 
   if (si(end) <= si(start)) { errEl.textContent='종료 시간은 시작 시간 이후여야 합니다.'; errEl.style.display='block'; return; }
@@ -923,10 +1319,23 @@ document.getElementById('mSave').addEventListener('click', () => {
   }
   errEl.style.display='none';
 
-  const palette = (editKey && bookingsDB[type][editKey]) ? bookingsDB[type][editKey].palette : nextPalette();
-  if (editKey) delete bookingsDB[type][editKey];
-  bookingsDB[type][bKey(date,bayIdx,start)] = { date, bayIdx, start, end, name, people: document.getElementById('mPeople').value, note: document.getElementById('mNote').value.trim(), palette };
-  saveToStorage();
+  if (manager) { addToManagerList(manager); saveManager(manager); }
+
+  const palette = (editKey && bookingsDB[type][editKey]) ? bookingsDB[type][editKey].palette : nextPalette(type);
+  if (editKey) {
+    saveToStorage(type, editKey, null);
+    delete bookingsDB[type][editKey];
+  }
+  const newKey = bKey(date, bayIdx, start);
+  const newData = {
+    date, bayIdx, start, end, name, phone,
+    people: document.getElementById('mPeople').value,
+    hole, manager,
+    note: document.getElementById('mNote').value.trim(),
+    palette
+  };
+  bookingsDB[type][newKey] = newData;
+  saveToStorage(type, newKey, newData);
   refreshTable(type);
   renderCal(type);
   document.getElementById('modalBg').classList.remove('open');
@@ -934,15 +1343,26 @@ document.getElementById('mSave').addEventListener('click', () => {
 
 document.getElementById('mDelete').addEventListener('click', () => {
   const { type, editKey } = modalState;
-  if (editKey) delete bookingsDB[type][editKey];
-  saveToStorage();
+  if (editKey) {
+    saveToStorage(type, editKey, null);
+    delete bookingsDB[type][editKey];
+  }
   refreshTable(type);
   renderCal(type);
   document.getElementById('modalBg').classList.remove('open');
 });
 
 document.getElementById('mCancel').addEventListener('click', () => { document.getElementById('modalBg').classList.remove('open'); });
-document.getElementById('modalBg').addEventListener('click', e => { if(e.target===document.getElementById('modalBg')) document.getElementById('modalBg').classList.remove('open'); });
+
+// Only close modal on a genuine click outside (not from drag release)
+let modalMouseDownTarget = null;
+document.getElementById('modalBg').addEventListener('mousedown', e => { modalMouseDownTarget = e.target; });
+document.getElementById('modalBg').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalBg') && modalMouseDownTarget === document.getElementById('modalBg')) {
+    document.getElementById('modalBg').classList.remove('open');
+  }
+  modalMouseDownTarget = null;
+});
 
 document.addEventListener('click', e => {
   BOARDS.forEach(cfg => {
