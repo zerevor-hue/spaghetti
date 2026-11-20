@@ -3,27 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>0790번 버스 실시간 위치</title>
+<title>통근버스 실시간 위치</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root {
-    --bg: #f4f6f9;
+    --bg: #f2f4f7;
     --card: #ffffff;
+    --surface: #f8f9fb;
     --text-main: #191f28;
-    --text-sub: #6b7684;
+    --text-sub: #4e5968;
     --text-muted: #8b95a1;
     --border: #e5e8eb;
     --primary: #3182f6;
+    --primary-dark: #1b64da;
     --primary-soft: #e8f3ff;
+    --back-accent: #0ca678;
+    --back-soft: #e6fcf5;
     --success: #00b06b;
     --success-soft: #e5f8f0;
     --danger: #f04452;
     --danger-soft: #ffeeef;
     --warn: #f59f00;
     --warn-soft: #fff8e6;
+    --radius-xl: 20px;
     --radius-lg: 16px;
     --radius-md: 12px;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 2px 8px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 6px 20px rgba(16, 24, 40, 0.10);
   }
 
   * {
@@ -42,58 +48,85 @@
     overflow: hidden;
   }
 
+  /* 상단 헤더 */
   .app-header {
     background: var(--card);
-    padding: 14px 16px;
+    padding: 12px 16px 10px;
     border-bottom: 1px solid var(--border);
+    z-index: 1000;
+    flex-shrink: 0;
+  }
+
+  .header-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    z-index: 1000;
-    flex-shrink: 0;
+    gap: 10px;
   }
 
   .title-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
   }
 
-  .bus-badge {
-    background: var(--primary);
-    color: #fff;
-    font-weight: 700;
-    font-size: 13px;
-    padding: 4px 9px;
-    border-radius: 8px;
-    letter-spacing: 0.02em;
+  .bus-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  body.dir-back .bus-icon-box {
+    background: var(--back-soft);
+    color: var(--back-accent);
+  }
+
+  .title-text-wrap {
+    display: flex;
+    flex-direction: column;
   }
 
   .app-title {
     margin: 0;
-    font-size: 17px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 800;
     letter-spacing: -0.02em;
+    line-height: 1.2;
   }
 
+  .app-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* 출근 / 퇴근 세그먼트 */
   .dir-toggle {
     display: flex;
     background: var(--bg);
     padding: 3px;
-    border-radius: 10px;
+    border-radius: 11px;
     border: 1px solid var(--border);
   }
 
   .dir-btn {
     border: none;
     background: transparent;
-    padding: 5px 10px;
+    padding: 6px 11px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-sub);
-    border-radius: 7px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.18s ease;
   }
 
   .dir-btn.active {
@@ -102,19 +135,106 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   }
 
-  .map-wrapper {
+  body.dir-back .dir-btn.active {
+    color: var(--back-accent);
+  }
+
+  /* 뷰 전환 탭 (지도 / 노선·시간표) */
+  .view-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+    background: var(--bg);
+    padding: 3px;
+    border-radius: 11px;
+  }
+
+  .view-tab-btn {
+    border: none;
+    background: transparent;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-sub);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.18s ease;
+  }
+
+  .view-tab-btn.active {
+    background: var(--card);
+    color: var(--text-main);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  }
+
+  /* 메인 콘텐츠 영역 */
+  .main-stage {
     position: relative;
     flex: 1;
     width: 100%;
-    min-height: 240px;
+    min-height: 220px;
+    overflow: hidden;
+  }
+
+  /* 지도 뷰 */
+  .map-view {
+    position: absolute;
+    inset: 0;
+    display: block;
   }
 
   #map {
     width: 100%;
     height: 100%;
     z-index: 1;
+    background: #eef2f6;
   }
 
+  /* OSM 타일 톤을 부드럽고 현대적으로 보정 */
+  .leaflet-tile-pane {
+    filter: saturate(0.84) contrast(0.97) brightness(1.02);
+  }
+
+  /* 지도 위 플로팅 알림 배너 */
+  .top-banner {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 700;
+    background: rgba(25, 31, 40, 0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 12.5px;
+    line-height: 1.4;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .top-banner.show { display: flex; }
+  .top-banner.warn { background: rgba(240, 68, 82, 0.95); }
+
+  .banner-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 2px 4px;
+    opacity: 0.85;
+  }
+
+  /* 지도 우측 플로팅 버튼 그룹 */
   .map-fab-group {
     position: absolute;
     right: 14px;
@@ -126,68 +246,240 @@
   }
 
   .map-fab {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: var(--card);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
     cursor: pointer;
     color: var(--text-main);
+    transition: transform 0.12s ease, background 0.15s ease;
   }
 
   .map-fab:active {
+    transform: scale(0.94);
     background: var(--bg);
   }
 
-  .top-banner {
+  /* 노선도 / 시간표 뷰 */
+  .route-view {
     position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    z-index: 600;
-    background: rgba(25, 31, 40, 0.9);
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-    line-height: 1.4;
+    inset: 0;
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 14px 14px 24px;
     display: none;
+    z-index: 600;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .route-view.active {
+    display: block;
+  }
+
+  .route-summary-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
-  .top-banner.show {
+  .route-summary-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+
+  .route-summary-desc {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 3px;
+  }
+
+  .route-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 9px;
+    border-radius: 8px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    white-space: nowrap;
+  }
+
+  body.dir-back .route-badge {
+    background: var(--back-soft);
+    color: var(--back-accent);
+  }
+
+  .timeline-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 8px 14px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+
+  .stop-row {
+    position: relative;
     display: flex;
-  }
-
-  .top-banner.warn {
-    background: rgba(240, 68, 82, 0.95);
-  }
-
-  .banner-close {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 16px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 4px;
     cursor: pointer;
-    padding: 0 4px;
-    opacity: 0.8;
+    border-radius: 10px;
+    transition: background 0.15s ease;
   }
 
+  .stop-row:active {
+    background: var(--surface);
+  }
+
+  .stop-row:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 30px;
+    bottom: -14px;
+    width: 2.5px;
+    background: #d9e2ec;
+    z-index: 1;
+  }
+
+  .stop-row.passed:not(:last-child)::after {
+    background: var(--primary);
+    opacity: 0.35;
+  }
+
+  body.dir-back .stop-row.passed:not(:last-child)::after {
+    background: var(--back-accent);
+  }
+
+  .stop-node {
+    position: relative;
+    z-index: 2;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 2.5px solid var(--primary);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  body.dir-back .stop-node {
+    border-color: var(--back-accent);
+    color: var(--back-accent);
+  }
+
+  .stop-node.terminal {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  body.dir-back .stop-node.terminal {
+    background: var(--back-accent);
+    border-color: var(--back-accent);
+  }
+
+  .stop-row.near-bus .stop-node {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+    box-shadow: 0 0 0 5px var(--success-soft);
+  }
+
+  .stop-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stop-name-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .stop-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .stop-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--bg);
+    color: var(--text-sub);
+  }
+
+  .stop-tag.live-here {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+
+  .stop-spot {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 3px;
+  }
+
+  .stop-times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .time-chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+  }
+
+  .time-chip strong {
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  .stop-map-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    align-self: center;
+    padding-left: 4px;
+    flex-shrink: 0;
+  }
+
+  /* 하단 상태 및 컨트롤 시트 */
   .bottom-sheet {
     background: var(--card);
     border-top: 1px solid var(--border);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 16px;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 14px 16px 16px;
+    box-shadow: 0 -6px 24px rgba(16, 24, 40, 0.06);
     z-index: 1000;
     flex-shrink: 0;
   }
@@ -196,16 +488,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--bg);
-    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 11px 13px;
     border-radius: var(--radius-md);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    gap: 10px;
   }
 
   .status-left {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
 
   .pulse-dot {
@@ -227,36 +522,43 @@
     box-shadow: 0 0 0 4px var(--warn-soft);
   }
 
-  .pulse-dot.off {
-    background: var(--text-muted);
-  }
-
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(0, 176, 107, 0.4); }
-    70% { box-shadow: 0 0 0 7px rgba(0, 176, 107, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(0, 176, 107, 0.45); }
+    70% { box-shadow: 0 0 0 8px rgba(0, 176, 107, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 176, 107, 0); }
   }
 
+  .status-texts {
+    min-width: 0;
+  }
+
   .status-title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .status-sub {
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--text-sub);
     margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .status-pill {
     font-size: 11px;
     font-weight: 700;
     padding: 4px 8px;
-    border-radius: 6px;
+    border-radius: 7px;
     background: #e5e8eb;
     color: var(--text-sub);
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .status-pill.live {
@@ -271,10 +573,10 @@
 
   .action-btn {
     width: 100%;
-    padding: 14px;
+    padding: 13px 16px;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
     cursor: pointer;
     background: var(--primary);
@@ -282,27 +584,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 7px;
     transition: transform 0.1s ease, background 0.15s ease;
+    box-shadow: 0 4px 12px rgba(49, 130, 246, 0.25);
   }
 
-  .action-btn:active {
-    transform: scale(0.99);
+  body.dir-back .action-btn:not(.sharing):not(:disabled) {
+    background: var(--back-accent);
+    box-shadow: 0 4px 12px rgba(12, 166, 120, 0.25);
   }
+
+  .action-btn:active { transform: scale(0.99); }
 
   .action-btn.sharing {
     background: var(--danger);
+    box-shadow: 0 4px 12px rgba(240, 68, 82, 0.25);
   }
 
   .action-btn:disabled {
     background: #cbd2d9;
+    box-shadow: none;
     cursor: not-allowed;
   }
 
   .helper-note {
-    font-size: 11.5px;
-    color: var(--text-sub);
-    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 7px;
     text-align: center;
     line-height: 1.4;
   }
@@ -318,60 +626,255 @@
     line-height: 1.4;
   }
 
-  .bus-marker-pin {
-    background: var(--primary);
-    color: #fff;
-    font-weight: 800;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 20px;
-    border: 2.5px solid #fff;
-    box-shadow: 0 3px 10px rgba(49, 130, 246, 0.45);
-    white-space: nowrap;
+  /* 커스텀 Leaflet 버스 마커 */
+  .bus-marker-wrap {
+    position: relative;
     transform: translate(-50%, -50%);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+  }
+
+  .bus-marker-halo {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(49, 130, 246, 0.22);
+    animation: busHalo 2s infinite;
+  }
+
+  body.dir-back .bus-marker-halo {
+    background: rgba(12, 166, 120, 0.22);
+  }
+
+  @keyframes busHalo {
+    0% { transform: scale(0.7); opacity: 0.9; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
+
+  .bus-marker-pin {
+    position: relative;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 800;
+    font-size: 11.5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 2.5px solid #fff;
+    box-shadow: 0 4px 14px rgba(25, 31, 40, 0.32);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .bus-marker-pin.back {
+    background: var(--back-accent);
   }
 
   .bus-marker-pin.stale {
     background: #8b95a1;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+
+  /* 커스텀 Leaflet 정류장 마커 */
+  .stop-pin {
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+  }
+
+  .stop-pin-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2.5px solid var(--primary);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.24);
+  }
+
+  body.dir-back .stop-pin-circle {
+    border-color: var(--back-accent);
+    color: var(--back-accent);
+  }
+
+  .stop-pin-circle.terminal {
+    width: 24px;
+    height: 24px;
+    background: var(--primary);
+    color: #ffffff;
+    border: 2.5px solid #ffffff;
+    font-size: 10.5px;
+  }
+
+  body.dir-back .stop-pin-circle.terminal {
+    background: var(--back-accent);
+  }
+
+  .stop-pin-label {
+    margin-top: 3px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text-main);
+    border: 1px solid rgba(25, 31, 40, 0.12);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.12);
+  }
+
+  .stop-pin-label.terminal {
+    background: var(--text-main);
+    color: #ffffff;
+    border-color: transparent;
+  }
+
+  /* 줌 아웃 시 중간 정류장 라벨 숨김으로 겹침 방지 */
+  #map.zoom-low .stop-pin-label.minor {
+    display: none;
+  }
+
+  /* Leaflet 팝업 커스텀 디자인 */
+  .leaflet-popup-content-wrapper {
+    border-radius: 14px;
+    box-shadow: var(--shadow-md);
+    padding: 2px;
+  }
+
+  .leaflet-popup-content {
+    margin: 10px 12px;
+    font-family: inherit;
+    min-width: 190px;
+  }
+
+  .popup-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .popup-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 10.5px;
+    font-weight: 800;
+  }
+
+  .popup-spot {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  .popup-times {
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-main);
+    line-height: 1.5;
   }
 </style>
 </head>
 <body>
 
+  <!-- 상단 헤더 -->
   <header class="app-header">
-    <div class="title-group">
-      <span class="bus-badge">0790</span>
-      <h1 class="app-title">통근버스 위치</h1>
+    <div class="header-top">
+      <div class="title-group">
+        <div class="bus-icon-box" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>
+          </svg>
+        </div>
+        <div class="title-text-wrap">
+          <h1 class="app-title">통근버스 위치</h1>
+          <span class="app-subtitle" id="routeSubtitle">배곧 롯데마트 → 발전소(영흥순대국)</span>
+        </div>
+      </div>
+
+      <div class="dir-toggle" role="group" aria-label="운행 방향">
+        <button type="button" class="dir-btn active" id="btnDirOut">출근행</button>
+        <button type="button" class="dir-btn" id="btnDirBack">퇴근행</button>
+      </div>
     </div>
-    <div class="dir-toggle" role="group" aria-label="운행 방향">
-      <button type="button" class="dir-btn active" id="btnDirOut" data-dir="out">출근행</button>
-      <button type="button" class="dir-btn" id="btnDirBack" data-dir="back">퇴근행</button>
+
+    <div class="view-tabs" role="tablist">
+      <button type="button" class="view-tab-btn active" id="tabMap" role="tab" aria-selected="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+        실시간 지도
+      </button>
+      <button type="button" class="view-tab-btn" id="tabRoute" role="tab" aria-selected="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+        정류소 · 시간표
+      </button>
     </div>
   </header>
 
-  <main class="map-wrapper">
+  <!-- 메인 스테이지 (지도 뷰 + 노선도 뷰) -->
+  <main class="main-stage">
     <div id="topBanner" class="top-banner" role="alert">
       <span id="bannerText"></span>
       <button type="button" class="banner-close" id="bannerClose" aria-label="닫기">✕</button>
     </div>
 
-    <div id="map"></div>
+    <!-- 1) 지도 뷰 -->
+    <div class="map-view" id="mapView">
+      <div id="map"></div>
 
-    <div class="map-fab-group">
-      <button type="button" class="map-fab" id="btnCenterBus" title="버스 위치로 이동">🚌</button>
-      <button type="button" class="map-fab" id="btnCenterMe" title="내 위치로 이동">📍</button>
+      <div class="map-fab-group">
+        <button type="button" class="map-fab" id="btnFitRoute" title="전체 정류소 보기">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        </button>
+        <button type="button" class="map-fab" id="btnCenterBus" title="버스 위치로 이동">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>
+        </button>
+        <button type="button" class="map-fab" id="btnCenterMe" title="내 위치로 이동">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2) 정류소 노선도 · 시간표 뷰 -->
+    <div class="route-view" id="routeView">
+      <div class="route-summary-card">
+        <div>
+          <div class="route-summary-title" id="routeSummaryTitle">출근행 노선 (10개 정류소)</div>
+          <div class="route-summary-desc" id="routeSummaryDesc">정류소를 누르면 지도에서 정확한 위치를 보여드립니다.</div>
+        </div>
+        <span class="route-badge" id="routeSummaryBadge">시흥 → 영흥</span>
+      </div>
+
+      <div class="timeline-card" id="stopTimelineList"></div>
     </div>
   </main>
 
+  <!-- 하단 상태 & 공유 시트 -->
   <section class="bottom-sheet">
     <div class="status-card">
       <div class="status-left">
-        <span id="statusDot" class="pulse-dot off"></span>
-        <div>
+        <span id="statusDot" class="pulse-dot"></span>
+        <div class="status-texts">
           <div id="statusTitle" class="status-title">위치 정보 확인 중...</div>
           <div id="statusSub" class="status-sub">잠시만 기다려 주세요</div>
         </div>
@@ -380,7 +883,8 @@
     </div>
 
     <button type="button" id="shareBtn" class="action-btn">
-      버스 탑승 · 위치 공유 시작
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <span id="shareBtnText">버스 탑승 · 위치 공유 시작</span>
     </button>
 
     <div id="helperNote" class="helper-note">
@@ -406,24 +910,146 @@ const firebaseConfig = {
   appId: "1:434862222996:web:e7e2a67c5188542bc90e81"
 };
 
-const BUS_ID = "0790";
+const BUS_DB_KEY = "0790";
+
 const SEND_INTERVAL_MS = 5000;
-const CORRIDOR_RADIUS_M = 200;
-const OFFROUTE_LIMIT_MIN = 3;
-const ARRIVAL_RADIUS_M = 100;
+const ARRIVAL_RADIUS_M = 120;
 const MAX_SHARE_MINUTES = 90;
 const STALE_MINUTES = 15;
-const MAX_ACCURACY_M = 100;
+const MAX_ACCURACY_M = 200;
 const ACTIVE_SHARER_TIMEOUT_S = 30;
 
-const ROUTE_WAYPOINTS = [];
+const BUS_STOPS = [
+  {
+    id: "baegot",
+    name: "배곧 롯데마트",
+    lat: 37.3688,
+    lng: 126.7265,
+    isTerminal: true,
+    major: true,
+    outSpot: "롯데마트 앞 택시승강장",
+    outTimes: { am: "06:38", pm: "18:40" },
+    backSpot: "중심상가 버스정류장",
+    backShift: { am: "09:20", pm: "21:20" },
+    backRegular: { monThu: "19:20", fri: "14:20" }
+  },
+  {
+    id: "oido",
+    name: "오이도역",
+    lat: 37.3622,
+    lng: 126.7381,
+    major: false,
+    outSpot: "보영A 입구앞 세븐일레븐",
+    outTimes: { am: "06:41", pm: "18:45" },
+    backSpot: "(구)버스정류장",
+    backShift: { am: "09:14", pm: "21:14" },
+    backRegular: { monThu: "19:15", fri: "14:15" }
+  },
+  {
+    id: "jeongwang",
+    name: "정왕역",
+    lat: 37.3515,
+    lng: 126.7428,
+    major: true,
+    outSpot: "꽃가게단지 옆 (우회전 코너)",
+    outTimes: { am: "06:44", pm: "18:50" },
+    backSpot: "대관광장 앞 횡단보도",
+    backShift: { am: "09:12", pm: "21:12" },
+    backRegular: { monThu: "19:12", fri: "14:12" }
+  },
+  {
+    id: "world",
+    name: "월드메르디앙A",
+    lat: 37.3468,
+    lng: 126.7369,
+    major: false,
+    outSpot: "113동 앞 버스정류장",
+    outTimes: { am: "06:50", pm: "18:56" },
+    backSpot: "세종주공3차A 312동 버스정류장",
+    backShift: { am: "09:04", pm: "21:04" },
+    backRegular: { monThu: "19:04", fri: "14:04" }
+  },
+  {
+    id: "shindonga1",
+    name: "신동아 1차A",
+    lat: 37.3435,
+    lng: 126.7335,
+    major: false,
+    outSpot: "단지상가 앞",
+    outTimes: { am: "06:54", pm: "18:59" },
+    backSpot: "단지상가 건너편",
+    backShift: { am: "09:03", pm: "21:03" },
+    backRegular: { monThu: "19:03", fri: "14:03" }
+  },
+  {
+    id: "shindonga2",
+    name: "신동아 2차A",
+    lat: 37.3412,
+    lng: 126.7318,
+    major: false,
+    outSpot: "단지상가 앞",
+    outTimes: { am: "06:56", pm: "19:00" },
+    backSpot: "단지상가 건너편",
+    backShift: { am: "09:02", pm: "21:02" },
+    backRegular: { monThu: "19:02", fri: "14:02" }
+  },
+  {
+    id: "gyeryong",
+    name: "계룡A",
+    lat: 37.3385,
+    lng: 126.7295,
+    major: false,
+    outSpot: "단지상가 앞",
+    outTimes: { am: "06:57", pm: "19:02" },
+    backSpot: "단지상가 건너편",
+    backShift: { am: "09:01", pm: "21:01" },
+    backRegular: { monThu: "19:01", fri: "14:01" }
+  },
+  {
+    id: "yeongheung_term",
+    name: "영흥 터미널",
+    lat: 37.2555,
+    lng: 126.4958,
+    major: true,
+    outSpot: "우리의원 앞 주차장",
+    outTimes: { am: "07:35", pm: "19:35" },
+    backSpot: "우리의원 건너편",
+    backShift: { am: "08:31", pm: "20:31" },
+    backRegular: { monThu: "18:23", fri: "13:23" }
+  },
+  {
+    id: "bulgeunnori",
+    name: "붉은노리 삼거리",
+    lat: 37.2492,
+    lng: 126.4675,
+    major: false,
+    outSpot: "중앙슈퍼 옆",
+    outTimes: { am: "07:38", pm: "19:38" },
+    backSpot: "로터리",
+    backShift: { am: "08:28", pm: "20:28" },
+    backRegular: { monThu: "18:20", fri: "13:20" }
+  },
+  {
+    id: "powerplant",
+    name: "발전소(영흥순대국)",
+    lat: 37.242938,
+    lng: 126.447312,
+    isTerminal: true,
+    major: true,
+    outSpot: "영흥순대국 앞 (CU삼거리 · 종점)",
+    outTimes: { am: "07:41", pm: "19:41" },
+    backSpot: "CU편의점 앞 (기점)",
+    backShift: { am: "08:25", pm: "20:25" },
+    backRegular: { monThu: "18:16", fri: "13:16" }
+  }
+];
 
-const DEFAULT_CENTER = [37.4563, 126.7052];
-const DEFAULT_ZOOM = 13;
+const START_TERMINAL = [BUS_STOPS[0].lat, BUS_STOPS[0].lng];
+const END_TERMINAL = [BUS_STOPS[BUS_STOPS.length - 1].lat, BUS_STOPS[BUS_STOPS.length - 1].lng];
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const busRef = db.ref("buses/" + BUS_ID);
+const busRef = db.ref("buses/" + BUS_DB_KEY);
 const connectedRef = db.ref(".info/connected");
 
 const SESSION_ID = "sess_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36);
@@ -432,6 +1058,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 let currentDirection = detectDirectionByTime();
 let isDirectionManual = false;
+let currentTab = "map";
 let latestBusData = null;
 
 let isSharing = false;
@@ -439,7 +1066,6 @@ let watchId = null;
 let wakeLock = null;
 let shareStartedAt = 0;
 let lastSentAt = 0;
-let offRouteSince = null;
 let arrivalArmed = false;
 let maxDurationTimer = null;
 
@@ -447,7 +1073,7 @@ const map = L.map("map", {
   zoomControl: false,
   minZoom: 10,
   maxZoom: 18
-}).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+}).setView([37.3100, 126.5900], 11);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -456,37 +1082,23 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 
 let busMarker = null;
 let myMarker = null;
-let routePolyline = null;
+let guidePolyline = null;
+let stopMarkerMap = {};
 let hasCenteredOnBus = false;
 
-function createBusIcon(dir, isStale) {
-  const dirLabel = dir === "back" ? "퇴근" : "출근";
-  return L.divIcon({
-    html: `<div class="bus-marker-pin ${isStale ? "stale" : ""}">🚌 0790 · ${dirLabel}</div>`,
-    className: "",
-    iconSize: [0, 0],
-    iconAnchor: [0, 0]
-  });
-}
-
-function drawRouteIfAvailable() {
-  if (routePolyline) {
-    map.removeLayer(routePolyline);
-    routePolyline = null;
-  }
-  if (ROUTE_WAYPOINTS.length >= 2) {
-    const coords = currentDirection === "back" ? [...ROUTE_WAYPOINTS].reverse() : ROUTE_WAYPOINTS;
-    routePolyline = L.polyline(coords, {
-      color: "#3182f6",
-      weight: 5,
-      opacity: 0.65
-    }).addTo(map);
-
-    const bounds = routePolyline.getBounds().pad(0.25);
-    map.setMaxBounds(bounds);
+function updateZoomClass() {
+  const mapEl = document.getElementById("map");
+  if (map.getZoom() < 13) {
+    mapEl.classList.add("zoom-low");
+  } else {
+    mapEl.classList.remove("zoom-low");
   }
 }
-drawRouteIfAvailable();
+map.on("zoomend", updateZoomClass);
+
+function getOrderedStops(dir) {
+  return dir === "back" ? [...BUS_STOPS].reverse() : [...BUS_STOPS];
+}
 
 function getDistanceMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -496,42 +1108,8 @@ function getDistanceMeters(lat1, lng1, lat2, lng2) {
   return Math.sqrt(dLat * dLat + dLng * dLng) * R;
 }
 
-function pointToSegmentDistanceM(pLat, pLng, aLat, aLng, bLat, bLng) {
-  const rad = Math.PI / 180;
-  const cosLat = Math.cos(pLat * rad);
-  const px = pLng * cosLat, py = pLat;
-  const ax = aLng * cosLat, ay = aLat;
-  const bx = bLng * cosLat, by = bLat;
-
-  const dx = bx - ax;
-  const dy = by - ay;
-  const lenSq = dx * dx + dy * dy;
-
-  let t = 0;
-  if (lenSq > 0) {
-    t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
-    t = Math.max(0, Math.min(1, t));
-  }
-  const projLng = (ax + t * dx) / cosLat;
-  const projLat = ay + t * dy;
-  return getDistanceMeters(pLat, pLng, projLat, projLng);
-}
-
-function distanceToRouteM(lat, lng, waypoints) {
-  if (!waypoints || waypoints.length === 0) return 0;
-  if (waypoints.length === 1) {
-    return getDistanceMeters(lat, lng, waypoints[0][0], waypoints[0][1]);
-  }
-  let minDist = Infinity;
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const d = pointToSegmentDistanceM(
-      lat, lng,
-      waypoints[i][0], waypoints[i][1],
-      waypoints[i + 1][0], waypoints[i + 1][1]
-    );
-    if (d < minDist) minDist = d;
-  }
-  return minDist;
+function formatDistance(meters) {
+  if (meters < 1000) return `${Math.round(meters / 10) * 10}m`; return `${(meters / 1000).toFixed(1)}km`;
 }
 
 function detectDirectionByTime() {
@@ -540,444 +1118,124 @@ function detectDirectionByTime() {
 }
 
 function detectSmartDirection(lat, lng) {
-  if (ROUTE_WAYPOINTS.length >= 2) {
-    const startPt = ROUTE_WAYPOINTS[0];
-    const endPt = ROUTE_WAYPOINTS[ROUTE_WAYPOINTS.length - 1];
-    const distToStart = getDistanceMeters(lat, lng, startPt[0], startPt[1]);
-    const distToEnd = getDistanceMeters(lat, lng, endPt[0], endPt[1]);
-
-    if (distToStart < 1000 && distToStart < distToEnd) return "out";
-    if (distToEnd < 1000 && distToEnd < distToStart) return "back";
-  }
+  const distToStart = getDistanceMeters(lat, lng, START_TERMINAL[0], START_TERMINAL[1]);
+  const distToEnd = getDistanceMeters(lat, lng, END_TERMINAL[0], END_TERMINAL[1]);
+  if (distToStart < 3000 && distToStart < distToEnd) return "out";
+  if (distToEnd < 3000 && distToEnd < distToStart) return "back";
   return detectDirectionByTime();
 }
 
 function getDestinationPoint(dir) {
-  if (ROUTE_WAYPOINTS.length < 2) return null;
-  return dir === "back" ? ROUTE_WAYPOINTS[0] : ROUTE_WAYPOINTS[ROUTE_WAYPOINTS.length - 1];
+  return dir === "back" ? START_TERMINAL : END_TERMINAL;
 }
 
-const statusDot = document.getElementById("statusDot");
-const statusTitle = document.getElementById("statusTitle");
-const statusSub = document.getElementById("statusSub");
-const statusPill = document.getElementById("statusPill");
-const shareBtn = document.getElementById("shareBtn");
-const helperNote = document.getElementById("helperNote");
-const topBanner = document.getElementById("topBanner");
-const bannerText = document.getElementById("bannerText");
-
-if (isIOS) {
-  document.getElementById("iosNotice").style.display = "block";
-}
-
-function showBanner(msg, isWarn = false) {
-  bannerText.textContent = msg;
-  topBanner.classList.toggle("warn", isWarn);
-  topBanner.classList.add("show");
-}
-
-document.getElementById("bannerClose").addEventListener("click", () => {
-  topBanner.classList.remove("show");
-});
-
-function setDirectionUI(dir) {
-  currentDirection = dir;
-  document.getElementById("btnDirOut").classList.toggle("active", dir === "out");
-  document.getElementById("btnDirBack").classList.toggle("active", dir === "back");
-  drawRouteIfAvailable();
-}
-setDirectionUI(currentDirection);
-
-document.getElementById("btnDirOut").addEventListener("click", () => {
-  isDirectionManual = true;
-  setDirectionUI("out");
-  if (isSharing) busRef.update({ direction: "out" });
-});
-
-document.getElementById("btnDirBack").addEventListener("click", () => {
-  isDirectionManual = true;
-  setDirectionUI("back");
-  if (isSharing) busRef.update({ direction: "back" });
-});
-
-function formatAgo(ts) {
-  if (!ts) return "시간 정보 없음";
-  const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (diffSec < 60) return "방금 전";
-  const mins = Math.floor(diffSec / 60);
-  if (mins < 60) return `${mins}분 전`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}시간 ${mins % 60}분 전`;
-}
-
-function renderViewerState() {
-  const data = latestBusData;
-  if (!data || typeof data.lat !== "number" || typeof data.lng !== "number") {
-    statusDot.className = "pulse-dot off";
-    statusTitle.textContent = "운행 정보 없음";
-    statusSub.textContent = "현재 위치를 공유 중인 탑승자가 없습니다.";
-    statusPill.className = "status-pill";
-    statusPill.textContent = "대기 중";
-    return;
-  }
-
-  const now = Date.now();
-  const ageMin = data.updatedAt ? (now - data.updatedAt) / 60000 : 999;
-  const isExpiredByDuration = data.startedAt && (now > data.startedAt + MAX_SHARE_MINUTES * 60000);
-  const isActivelySharing = data.sharing === true && !isExpiredByDuration;
-  const isStale = ageMin > STALE_MINUTES;
-
-  if (data.direction && !isDirectionManual && !isSharing) {
-    setDirectionUI(data.direction);
-  }
-
-  const markerIcon = createBusIcon(data.direction || currentDirection, !isActivelySharing || isStale);
-  if (busMarker) {
-    busMarker.setLatLng([data.lat, data.lng]);
-    busMarker.setIcon(markerIcon);
-  } else {
-    busMarker = L.marker([data.lat, data.lng], { icon: markerIcon }).addTo(map);
-  }
-
-  if (!hasCenteredOnBus) {
-    map.setView([data.lat, data.lng], 15);
-    hasCenteredOnBus = true;
-  }
-
-  const agoText = formatAgo(data.updatedAt);
-  const dirText = (data.direction === "back") ? "퇴근행" : "출근행";
-
-  if (!isActivelySharing) {
-    statusDot.className = "pulse-dot off";
-    statusTitle.textContent = `${dirText} · 공유 종료됨`;
-    statusSub.textContent = `마지막 위치: ${agoText}`;
-    statusPill.className = "status-pill";
-    statusPill.textContent = "종료됨";
-  } else if (isStale) {
-    statusDot.className = "pulse-dot stale";
-    statusTitle.textContent = `${dirText} · 위치 갱신 지연`;
-    statusSub.textContent = `마지막 업데이트: ${agoText} (오래된 정보)`;
-    statusPill.className = "status-pill stale";
-    statusPill.textContent = "지연됨";
-  } else {
-    statusDot.className = "pulse-dot live";
-    statusTitle.textContent = `${dirText} · 실시간 운행 중`;
-    statusSub.textContent = `마지막 업데이트: ${agoText} (오차 ±${data.accuracy || 0}m)`;
-    statusPill.className = "status-pill live";
-    statusPill.textContent = "공유 중";
-  }
-}
-
-setInterval(renderViewerState, 30000);
-
-busRef.on("value", (snap) => {
-  latestBusData = snap.val();
-  renderViewerState();
-});
-
-connectedRef.on("value", (snap) => {
-  if (snap.val() === false) {
-    showBanner("네트워크 연결이 끊어졌습니다. 마지막 확인 위치를 표시합니다.", true);
-  } else {
-    topBanner.classList.remove("show");
-  }
-});
-
-document.getElementById("btnCenterBus").addEventListener("click", () => {
-  if (latestBusData && typeof latestBusData.lat === "number") {
-    map.setView([latestBusData.lat, latestBusData.lng], 16);
-  } else {
-    showBanner("표시할 버스 위치가 아직 없습니다.");
-  }
-});
-
-document.getElementById("btnCenterMe").addEventListener("click", () => {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition((pos) => {
-    const { latitude, longitude } = pos.coords;
-    if (!myMarker) {
-      myMarker = L.circleMarker([latitude, longitude], {
-        radius: 7,
-        fillColor: "#191f28",
-        color: "#ffffff",
-        weight: 2,
-        fillOpacity: 0.9
-      }).addTo(map);
-    } else {
-      myMarker.setLatLng([latitude, longitude]);
+function findNearestStop(lat, lng, dir) {
+  const stops = getOrderedStops(dir);
+  let nearestIdx = 0;
+  let minDist = Infinity;
+  stops.forEach((s, idx) => {
+    const d = getDistanceMeters(lat, lng, s.lat, s.lng);
+    if (d < minDist) {
+      minDist = d;
+      nearestIdx = idx;
     }
-    map.setView([latitude, longitude], 16);
   });
-});
-
-function updateShareButtonUI(active) {
-  shareBtn.classList.toggle("sharing", active);
-  shareBtn.textContent = active ? "하차 · 내 위치 공유 종료" : "버스 탑승 · 위치 공유 시작";
-  helperNote.textContent = active
-    ? "내 위치가 0790번 버스 위치로 전송 중입니다. 하차 시 자동 또는 수동으로 종료됩니다."
-    : "가장 먼저 탑승한 분이 공유를 시작하면 실시간 위치가 지도에 표시됩니다.";
+  return { stop: stops[nearestIdx], index: nearestIdx, distanceM: minDist, nextStop: stops[nearestIdx + 1] || null };
 }
 
-async function requestWakeLock() {
-  try {
-    if ("wakeLock" in navigator) {
-      wakeLock = await navigator.wakeLock.request("screen");
-    }
-  } catch (e) {}
+function renderMapStops() {
+  Object.values(stopMarkerMap).forEach((m) => map.removeLayer(m));
+  stopMarkerMap = {};
+  if (guidePolyline) {
+    map.removeLayer(guidePolyline);
+    guidePolyline = null;
+  }
+
+  const ordered = getOrderedStops(currentDirection);
+  const coords = ordered.map((s) => [s.lat, s.lng]);
+
+  guidePolyline = L.polyline(coords, {
+    color: currentDirection === "back" ? "#0ca678" : "#3182f6",
+    weight: 3.5,
+    opacity: 0.45,
+    dashArray: "6, 8"
+  }).addTo(map);
+
+  ordered.forEach((stop, idx) => {
+    const orderNum = idx + 1;
+    const isTerm = Boolean(stop.isTerminal);
+    const labelClass = isTerm ? "stop-pin-label terminal" : (stop.major ? "stop-pin-label" : "stop-pin-label minor");
+    const circleClass = isTerm ? "stop-pin-circle terminal" : "stop-pin-circle";
+
+    const icon = L.divIcon({
+      html: `<div class="stop-pin"><div class="${circleClass}">${orderNum}</div><div class="${labelClass}">${stop.name}</div></div>`,
+      className: "",
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+
+    const marker = L.marker([stop.lat, stop.lng], {
+      icon,
+      zIndexOffset: isTerm ? 10 : -50
+    }).addTo(map);
+
+    const spotText = currentDirection === "back" ? stop.backSpot : stop.outSpot;
+    const timesHtml = currentDirection === "back"
+      ? `<div>교대: <strong>${stop.backShift.am}</strong> / <strong>${stop.backShift.pm}</strong></div><div>통상: 월~목 <strong>${stop.backRegular.monThu}</strong> · 금 <strong>${stop.backRegular.fri}</strong></div>`
+      : `<div>오전(주간/일근): <strong>${stop.outTimes.am}</strong></div><div>오후(야간): <strong>${stop.outTimes.pm}</strong></div>`;
+
+    const popupHtml = `
+      <div class="popup-title">
+        <span class="popup-order">${orderNum}</span>
+        <span>${stop.name}</span>
+      </div>
+      <div class="popup-spot">📍 ${spotText}</div>
+      <div class="popup-times">${timesHtml}</div>
+    `;
+    marker.bindPopup(popupHtml);
+    stopMarkerMap[stop.id] = marker;
+  });
+
+  updateZoomClass();
 }
 
-document.addEventListener("visibilitychange", () => {
-  if (isSharing && document.visibilityState === "visible") {
-    requestWakeLock();
-  }
-});
-
-function notifyShareStopped(reason) {
-  const msg = `공유가 종료되었어요 (사유: ${reason}). 다시 공유하려면 시작 버튼을 누르세요.`;
-  showBanner(msg, true);
-
-  if (navigator.vibrate) {
-    navigator.vibrate([200, 100, 200]);
-  }
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("0790번 버스 위치 공유 종료", { body: msg });
-  }
+function fitAllStops() {
+  const bounds = L.latLngBounds(BUS_STOPS.map((s) => [s.lat, s.lng]));
+  map.fitBounds(bounds.pad(0.14));
 }
 
-// 실내에서도 빠르게 잡히도록 고정밀(GPS) 실패 시 일반 정밀도(Wi-Fi/기지국)로 자동 재시도
-function getInitialLocation(onSuccess, onFail) {
-  navigator.geolocation.getCurrentPosition(
-    onSuccess,
-    () => {
-      navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        onFail,
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
-      );
-    },
-    { enableHighAccuracy: true, timeout: 5000 }
-  );
-}
+function renderRouteTimeline() {
+  const listEl = document.getElementById("stopTimelineList");
+  const ordered = getOrderedStops(currentDirection);
+  const isBack = currentDirection === "back";
 
-async function startShare() {
-  if (isAndroidApp && typeof window.Android.startShare === "function") {
-    window.Android.startShare(currentDirection);
-    isSharing = true;
-    updateShareButtonUI(true);
-    return;
-  }
+  document.getElementById("routeSummaryTitle").textContent = isBack
+    ? `퇴근행 노선 (${ordered.length}개 정류소)` : `출근행 노선 (${ordered.length}개 정류소)`;
+  document.getElementById("routeSummaryBadge").textContent = isBack ? "영흥 → 시흥" : "시흥 → 영흥";
 
-  if (!navigator.geolocation) {
-    showBanner("이 기기에서는 위치 정보를 사용할 수 없습니다.", true);
-    return;
-  }
-
-  const confirmText = isIOS
-    ? "내 실시간 위치가 버스 위치로 공유됩니다.\n[주의] iPhone은 화면을 켠 상태로 이 창을 유지해야 전송됩니다. 시작할까요?"
-    : "내 실시간 위치가 다른 탑승자들에게 0790번 버스 위치로 공유됩니다. 시작할까요?";
-
-  if (!confirm(confirmText)) return;
-
-  if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission().catch(() => {});
-  }
-
-  shareBtn.disabled = true;
-  shareBtn.textContent = "위치 확인 및 공유 준비 중...";
-
-  getInitialLocation(
-    (initialPos) => {
-      const { latitude, longitude, accuracy } = initialPos.coords;
-      const now = Date.now();
-
-      if (!isDirectionManual) {
-        const smartDir = detectSmartDirection(latitude, longitude);
-        setDirectionUI(smartDir);
-      }
-
-      busRef.transaction(
-        (current) => {
-          if (
-            current &&
-            current.sharing === true &&
-            current.sessionId !== SESSION_ID &&
-            current.updatedAt &&
-            (now - current.updatedAt) < ACTIVE_SHARER_TIMEOUT_S * 1000
-          ) {
-            return;
-          }
-          return {
-            lat: latitude,
-            lng: longitude,
-            accuracy: Math.round(accuracy),
-            updatedAt: now,
-            startedAt: now,
-            sessionId: SESSION_ID,
-            direction: currentDirection,
-            sharing: true
-          };
-        },
-        (error, committed) => {
-          shareBtn.disabled = false;
-          if (error) {
-            updateShareButtonUI(false);
-            showBanner("공유 시작 오류: " + error.message, true);
-            return;
-          }
-          if (!committed) {
-            updateShareButtonUI(false);
-            showBanner("이미 다른 탑승자가 버스 위치를 공유 중입니다. 지도로 위치를 확인하세요.", false);
-            return;
-          }
-
-          beginTracking(now, latitude, longitude);
-        }
-      );
-    },
-    (err) => {
-      shareBtn.disabled = false;
-      updateShareButtonUI(false);
-      let reason = "위치 권한이 차단되었거나 기기의 위치(GPS)가 꺼져 있습니다.";
-      if (err && err.code === 1) reason = "브라우저 위치 권한이 거부되었습니다. 주소창 왼쪽 자물쇠를 눌러 허용해 주세요.";
-      else if (err && err.code === 2) reason = "현재 위치 신호를 찾을 수 없습니다. 스마트폰의 위치(GPS) 설정을 켜주세요.";
-      else if (err && err.code === 3) reason = "위치 확인 시간이 초과되었습니다. 창가나 실외에서 다시 시도해 주세요.";
-      showBanner(reason, true);
-    }
-  );
-}
-
-function beginTracking(startedAt, initLat, initLng) {
-  isSharing = true;
-  shareStartedAt = startedAt;
-  lastSentAt = startedAt;
-  offRouteSince = null;
-  updateShareButtonUI(true);
-  requestWakeLock();
-
-  const dest = getDestinationPoint(currentDirection);
-  if (dest) {
-    const distToDest = getDistanceMeters(initLat, initLng, dest[0], dest[1]);
-    arrivalArmed = distToDest > ARRIVAL_RADIUS_M;
-  } else {
-    arrivalArmed = false;
-  }
-
-  if (maxDurationTimer) clearTimeout(maxDurationTimer);
-  maxDurationTimer = setTimeout(() => {
-    if (isSharing) stopShare("90분 경과");
-  }, MAX_SHARE_MINUTES * 60000);
-
-  watchId = navigator.geolocation.watchPosition(
-    handlePositionUpdate,
-    (err) => {
-      if (err && err.code === 1) {
-        stopShare("위치 권한 해제됨");
-      }
-    },
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
-  );
-}
-
-function handlePositionUpdate(pos) {
-  if (!isSharing) return;
-
-  const now = Date.now();
-  const { latitude, longitude, accuracy } = pos.coords;
-
-  if (accuracy > MAX_ACCURACY_M) return;
-
-  if (now - shareStartedAt > MAX_SHARE_MINUTES * 60000) {
-    stopShare("90분 경과");
-    return;
-  }
-
-  const dest = getDestinationPoint(currentDirection);
-  if (dest) {
-    const distToDest = getDistanceMeters(latitude, longitude, dest[0], dest[1]);
-    if (!arrivalArmed && distToDest > ARRIVAL_RADIUS_M) {
-      arrivalArmed = true;
-    } else if (arrivalArmed && distToDest <= ARRIVAL_RADIUS_M) {
-      stopShare("도착 구역 진입");
-      return;
+  let liveNear = null;
+  if (latestBusData && typeof latestBusData.lat === "number") {
+    const now = Date.now();
+    const expired = latestBusData.startedAt && (now > latestBusData.startedAt + MAX_SHARE_MINUTES * 60000);
+    if (latestBusData.sharing === true && !expired) {
+      liveNear = findNearestStop(latestBusData.lat, latestBusData.lng, currentDirection);
     }
   }
 
-  if (ROUTE_WAYPOINTS.length >= 2) {
-    const distToRoute = distanceToRouteM(latitude, longitude, ROUTE_WAYPOINTS);
-    if (distToRoute > CORRIDOR_RADIUS_M) {
-      if (!offRouteSince) offRouteSince = now;
-      if (now - offRouteSince >= OFFROUTE_LIMIT_MIN * 60000) {
-        stopShare("경로 이탈");
-      }
-      return;
-    } else {
-      offRouteSince = null;
+  listEl.innerHTML = ordered.map((stop, idx) => {
+    const orderNum = idx + 1;
+    const isNear = liveNear && liveNear.index === idx;
+    const isPassed = liveNear && idx < liveNear.index;
+    const spot = isBack ? stop.backSpot : stop.outSpot;
+
+    let tagsHtml = "";
+    if (idx === 0) tagsHtml += `<span class="stop-tag">기점</span>`;
+    if (idx === ordered.length - 1) tagsHtml += `<span class="stop-tag">종점</span>`;
+    if (isNear) {
+      const distLabel = liveNear.distanceM < 250 ? "정류소 인근" : `약 ${formatDistance(liveNear.distanceM)} 거리`;
+      tagsHtml += `<span class="stop-tag live-here">🚌 버스 위치 (${distLabel})</span>`;
     }
-  }
 
-  if (now - lastSentAt < SEND_INTERVAL_MS) return;
-  lastSentAt = now;
-
-  busRef.update({
-    lat: latitude,
-    lng: longitude,
-    accuracy: Math.round(accuracy),
-    updatedAt: now,
-    direction: currentDirection,
-    sharing: true
-  }).catch(() => {});
-}
-
-function stopShare(reason = null) {
-  if (isAndroidApp && typeof window.Android.stopShare === "function") {
-    window.Android.stopShare();
-    isSharing = false;
-    updateShareButtonUI(false);
-    return;
-  }
-
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
-  if (wakeLock) {
-    wakeLock.release().catch(() => {});
-    wakeLock = null;
-  }
-  if (maxDurationTimer) {
-    clearTimeout(maxDurationTimer);
-    maxDurationTimer = null;
-  }
-
-  const wasSharing = isSharing;
-  isSharing = false;
-  updateShareButtonUI(false);
-
-  if (wasSharing) {
-    busRef.update({
-      sharing: false,
-      updatedAt: Date.now()
-    }).catch(() => {});
-
-    if (reason) {
-      notifyShareStopped(reason);
-    }
-  }
-}
-
-shareBtn.addEventListener("click", () => {
-  if (isSharing) {
-    stopShare();
-  } else {
-    startShare();
-  }
-});
-
-window.addEventListener("pagehide", () => {
-  if (isSharing && !isAndroidApp) {
-    busRef.update({ sharing: false, updatedAt: Date.now() });
-  }
-});
-</script>
-</body>
-</html>
+    const timesHtml = isBack
+      ? `<span class="time-chip">교대 <strong>${stop.backShift.am}</strong> · <strong>${stop.backShift.pm}</strong></span>
+         <span class="time-chip">통상 <strong>${stop.backRegular.monThu}</strong> (금 <strong>${stop.backRegular.fri}</strong>
