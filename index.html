@@ -12,7 +12,7 @@
   .hdr{background:var(--card);padding:12px 16px 10px;border-bottom:1px solid var(--line);z-index:1000;flex-shrink:0;}
   .hdr-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .t-grp{display:flex;align-items:center;gap:9px;min-width:0;}
-  .ico-box{width:32px;height:32px;border-radius:10px;background:var(--pri-s);color:var(--pri);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ico-box{width:30px;height:30px;border-radius:9px;background:var(--pri-s);color:var(--pri);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   body.dir-back .ico-box{background:var(--back-s);color:var(--back);}
   .app-title{margin:0;font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.2;}
   .app-sub{font-size:11px;color:var(--muted);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -28,10 +28,10 @@
   .banner{position:absolute;top:12px;left:12px;right:12px;z-index:800;background:rgba(25,31,40,.92);color:#fff;padding:10px 14px;border-radius:12px;font-size:12.5px;line-height:1.4;display:none;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);}
   .banner.show{display:flex;}
   .banner.warn{background:rgba(240,68,82,.95);}
-  .banner button{background:none;border:none;color:#fff;font-size:15px;cursor:pointer;padding:2px 4px;}
+  .banner button{background:none;border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;}
   .fabs{position:absolute;right:14px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:500;}
-  .fab{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);font-size:17px;}
-  .fab:active{background:var(--bg);}
+  .fab{width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--line);box-shadow:0 3px 12px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sub);}
+  .fab:active{background:var(--bg);color:var(--ink);}
   .route-view{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--bg);overflow-y:auto;padding:14px 14px 24px;display:none;z-index:600;-webkit-overflow-scrolling:touch;}
   .route-view.active{display:block;}
   .r-sum{background:var(--card);border-radius:16px;padding:13px 15px;margin-bottom:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -42,18 +42,19 @@
   .tl-card{background:var(--card);border-radius:16px;padding:8px 14px;border:1px solid var(--line);}
   .s-row{position:relative;display:flex;align-items:flex-start;gap:12px;padding:12px 4px;cursor:pointer;border-radius:10px;}
   .s-row:active{background:var(--surf);}
-  .s-row:not(:last-child)::after{content:"";position:absolute;left:15px;top:29px;bottom:-13px;width:2.5px;background:#d9e2ec;z-index:1;}
+  .s-row:not(:last-child)::after{content:"";position:absolute;left:15px;top:29px;bottom:-13px;width:2px;background:#d9e2ec;z-index:1;}
   .s-row.passed:not(:last-child)::after{background:var(--pri);opacity:.35;}
   body.dir-back .s-row.passed:not(:last-child)::after{background:var(--back);}
-  .s-node{position:relative;z-index:2;width:24px;height:24px;border-radius:50%;background:var(--card);border:2.5px solid var(--pri);color:var(--pri);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .s-node{position:relative;z-index:2;width:24px;height:24px;border-radius:50%;background:var(--card);border:2px solid var(--pri);color:var(--pri);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   body.dir-back .s-node{border-color:var(--back);color:var(--back);}
   .s-node.term{background:var(--pri);color:#fff;}
   body.dir-back .s-node.term{background:var(--back);}
   .s-row.near .s-node{background:var(--ok);border-color:var(--ok);color:#fff;box-shadow:0 0 0 5px var(--ok-s);}
   .s-info{flex:1;min-width:0;}
   .s-name{font-size:14px;font-weight:700;}
-  .s-tag{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--bg);color:var(--sub);margin-left:5px;}
+  .s-tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--bg);color:var(--sub);margin-left:5px;vertical-align:middle;}
   .s-tag.live{background:var(--ok-s);color:var(--ok);}
+  .s-tag.live::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ok);}
   .s-spot{font-size:12px;color:var(--sub);margin-top:3px;}
   .s-times{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
   .t-chip{font-size:11px;padding:3px 7px;border-radius:6px;background:var(--surf);border:1px solid var(--line);color:var(--sub);}
@@ -62,7 +63,7 @@
   .sheet{background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:13px 16px 15px;box-shadow:0 -4px 18px rgba(0,0,0,.05);z-index:1000;flex-shrink:0;}
   .st-card{display:flex;align-items:center;justify-content:space-between;background:var(--surf);border:1px solid var(--line);padding:10px 12px;border-radius:12px;margin-bottom:10px;gap:8px;}
   .st-l{display:flex;align-items:center;gap:10px;min-width:0;}
-  .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0;}
   .dot.live{background:var(--ok);box-shadow:0 0 0 4px var(--ok-s);animation:pulse 1.8s infinite;}
   .dot.stale{background:var(--warn);box-shadow:0 0 0 4px var(--warn-s);}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,176,107,.45)}70%{box-shadow:0 0 0 8px rgba(0,176,107,0)}100%{box-shadow:0 0 0 0 rgba(0,176,107,0)}}
@@ -77,15 +78,15 @@
   .btn-main:disabled{background:#cbd2d9;cursor:not-allowed;}
   .note{font-size:11px;color:var(--muted);margin-top:7px;text-align:center;line-height:1.4;}
   .ios-note{display:none;margin-top:7px;padding:7px 10px;background:var(--warn-s);color:#8a5300;border-radius:8px;font-size:11px;line-height:1.4;}
-  .bus-pin{background:var(--pri);color:#fff;font-weight:800;font-size:11.5px;padding:5px 10px;border-radius:999px;border:2.5px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.32);white-space:nowrap;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:4px;}
+  .bus-pin{background:var(--pri);color:#fff;font-weight:700;font-size:11.5px;padding:5px 10px;border-radius:999px;border:2px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.28);white-space:nowrap;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:5px;}
   .bus-pin.back{background:var(--back);}
   .bus-pin.stale{background:#8b95a1;}
   .stop-pin{transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;}
-  .stop-c{width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid var(--pri);color:var(--pri);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.22);}
+  .stop-c{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--pri);color:var(--pri);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.2);}
   body.dir-back .stop-c{border-color:var(--back);color:var(--back);}
   .stop-c.term{width:24px;height:24px;background:var(--pri);color:#fff;border-color:#fff;}
   body.dir-back .stop-c.term{background:var(--back);}
-  .stop-lbl{margin-top:2px;background:rgba(255,255,255,.94);color:var(--ink);border:1px solid rgba(0,0,0,.12);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.12);}
+  .stop-lbl{margin-top:2px;background:rgba(255,255,255,.95);color:var(--ink);border:1px solid rgba(0,0,0,.12);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.1);}
   .stop-lbl.term{background:var(--ink);color:#fff;border-color:transparent;}
   #map.zoom-low .stop-lbl.minor{display:none;}
   .leaflet-popup-content-wrapper{border-radius:12px;}
@@ -97,7 +98,9 @@
 <header class="hdr">
   <div class="hdr-top">
     <div class="t-grp">
-      <div class="ico-box">🚌</div>
+      <div class="ico-box" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="14" rx="3"/><path d="M4 11h16"/><path d="M8 18v2"/><path d="M16 18v2"/><circle cx="8" cy="14.5" r=".8" fill="currentColor"/><circle cx="16" cy="14.5" r=".8" fill="currentColor"/></svg>
+      </div>
       <div style="min-width:0">
         <h1 class="app-title">통근버스 위치</h1>
         <span class="app-sub" id="routeSubtitle">배곧 롯데마트 → 발전소(영흥순대국)</span>
@@ -109,18 +112,24 @@
     </div>
   </div>
   <div class="tabs">
-    <button type="button" class="active" id="tabMap">🗺️ 실시간 지도</button>
-    <button type="button" id="tabRoute">🚏 정류소 · 시간표</button>
+    <button type="button" class="active" id="tabMap">실시간 지도</button>
+    <button type="button" id="tabRoute">정류소 · 시간표</button>
   </div>
 </header>
 
 <main class="stage">
-  <div id="topBanner" class="banner"><span id="bannerText"></span><button type="button" id="bannerClose">✕</button></div>
+  <div id="topBanner" class="banner"><span id="bannerText"></span><button type="button" id="bannerClose" aria-label="닫기">&times;</button></div>
   <div id="map"></div>
   <div class="fabs" id="mapFabs">
-    <button type="button" class="fab" id="btnFitRoute" title="전체 노선">🗺️</button>
-    <button type="button" class="fab" id="btnCenterBus" title="버스 위치">🚌</button>
-    <button type="button" class="fab" id="btnCenterMe" title="내 위치">📍</button>
+    <button type="button" class="fab" id="btnFitRoute" title="전체 노선" aria-label="전체 노선 보기">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+    </button>
+    <button type="button" class="fab" id="btnCenterBus" title="버스 위치" aria-label="버스 위치로 이동">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="14" rx="3"/><path d="M4 11h16"/><path d="M8 18v2"/><path d="M16 18v2"/><circle cx="8" cy="14.5" r=".7" fill="currentColor"/><circle cx="16" cy="14.5" r=".7" fill="currentColor"/></svg>
+    </button>
+    <button type="button" class="fab" id="btnCenterMe" title="내 위치" aria-label="내 위치로 이동">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/></svg>
+    </button>
   </div>
   <div class="route-view" id="routeView">
     <div class="r-sum">
@@ -155,6 +164,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
+const BUS_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="14" rx="3"/><path d="M4 11h16"/><path d="M8 18v2"/><path d="M16 18v2"/></svg>';
 let isOfflineBanner = false;
 
 function showBanner(msg, isWarn, isOffline) {
@@ -271,7 +281,7 @@ function renderTimeline() {
     let tags = "";
     if (i === 0) tags += '<span class="s-tag">기점</span>';
     if (i === list.length - 1) tags += '<span class="s-tag">종점</span>';
-    if (isNear) tags += '<span class="s-tag live">🚌 ' + (near.distanceM < 250 ? "인근" : fmtDist(near.distanceM)) + "</span>";
+    if (isNear) tags += '<span class="s-tag live">' + (near.distanceM < 250 ? "버스 인근" : "버스 " + fmtDist(near.distanceM)) + "</span>";
     const times = isBack
       ? '<span class="t-chip">교대 <strong>' + s.backS[0] + "</strong> · <strong>" + s.backS[1] + '</strong></span><span class="t-chip">통상 <strong>' + s.backR[0] + "</strong> (금 <strong>" + s.backR[1] + "</strong>)</span>"
       : '<span class="t-chip">오전 <strong>' + s.outT[0] + '</strong></span><span class="t-chip">오후 <strong>' + s.outT[1] + "</strong></span>";
@@ -279,7 +289,7 @@ function renderTimeline() {
       '<div class="s-node' + (s.term ? " term" : "") + '">' + (i + 1) + '</div>' +
       '<div class="s-info"><div><span class="s-name">' + s.name + "</span>" + tags + '</div>' +
       '<div class="s-spot">' + (isBack ? s.backSpot : s.outSpot) + '</div><div class="s-times">' + times + '</div></div>' +
-      '<div class="s-go">지도 ›</div></div>';
+      '<div class="s-go">지도 &rsaquo;</div></div>';
   }).join("");
   $("stopTimelineList").querySelectorAll(".s-row").forEach((el) => {
     el.onclick = () => {
@@ -318,7 +328,7 @@ function renderMapStops() {
   stopMarkers = {};
   if (guideLine) { map.removeLayer(guideLine); guideLine = null; }
   const list = getStops(currentDirection), isBack = currentDirection === "back";
-  guideLine = L.polyline(list.map((s) => [s.lat, s.lng]), { color: isBack ? "#0ca678" : "#3182f6", weight: 3.5, opacity: 0.45, dashArray: "6,8" }).addTo(map);
+  guideLine = L.polyline(list.map((s) => [s.lat, s.lng]), { color: isBack ? "#0ca678" : "#3182f6", weight: 3, opacity: 0.42, dashArray: "6,8" }).addTo(map);
   list.forEach((s, i) => {
     const lblCls = s.term ? "stop-lbl term" : (s.major ? "stop-lbl" : "stop-lbl minor");
     const icon = L.divIcon({
@@ -329,7 +339,7 @@ function renderMapStops() {
     const times = isBack
       ? "교대: <b>" + s.backS[0] + " / " + s.backS[1] + "</b><br>통상: 월~목 <b>" + s.backR[0] + "</b> · 금 <b>" + s.backR[1] + "</b>"
       : "오전: <b>" + s.outT[0] + "</b> / 오후: <b>" + s.outT[1] + "</b>";
-    m.bindPopup("<b>" + (i + 1) + ". " + s.name + "</b><br>📍 " + (isBack ? s.backSpot : s.outSpot) + "<hr style='border:0;border-top:1px solid #e5e8eb;margin:6px 0'>" + times);
+    m.bindPopup("<b>" + (i + 1) + ". " + s.name + "</b><br><span style='color:#4e5968'>" + (isBack ? s.backSpot : s.outSpot) + "</span><hr style='border:0;border-top:1px solid #e5e8eb;margin:6px 0'>" + times);
     stopMarkers[s.id] = m;
   });
   updateZoomCls();
@@ -390,7 +400,7 @@ function renderViewer() {
 
   if (map) {
     const icon = L.divIcon({
-      html: '<div class="bus-pin ' + (dir === "back" ? "back " : "") + (!live || stale ? "stale" : "") + '">🚌 통근버스 · ' + (dir === "back" ? "퇴근" : "출근") + "</div>",
+      html: '<div class="bus-pin ' + (dir === "back" ? "back " : "") + (!live || stale ? "stale" : "") + '">' + BUS_SVG + "<span>통근버스 · " + (dir === "back" ? "퇴근" : "출근") + "</span></div>",
       className: "", iconSize: [0, 0], iconAnchor: [0, 0]
     });
     if (busMarker) { busMarker.setLatLng([d.lat, d.lng]); busMarker.setIcon(icon); }
