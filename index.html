@@ -155,12 +155,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
-function showBanner(msg, isWarn) {
+let isOfflineBanner = false;
+
+function showBanner(msg, isWarn, isOffline) {
+  isOfflineBanner = !!isOffline;
   $("bannerText").textContent = msg;
   $("topBanner").classList.toggle("warn", !!isWarn);
   $("topBanner").classList.add("show");
 }
-$("bannerClose").onclick = () => $("topBanner").classList.remove("show");
+function hideBanner() {
+  isOfflineBanner = false;
+  $("topBanner").classList.remove("show");
+}
+$("bannerClose").onclick = hideBanner;
 window.onerror = (msg, src, line) => showBanner("오류 발생(" + line + "줄): " + msg, true);
 
 const firebaseConfig = {
@@ -175,14 +182,15 @@ const firebaseConfig = {
 
 const BUS_DB_KEY = "0790";
 const SEND_INTERVAL_MS = 5000, ARRIVAL_RADIUS_M = 120, MAX_SHARE_MINUTES = 90, STALE_MINUTES = 15, MAX_ACCURACY_M = 200, ACTIVE_SHARER_TIMEOUT_S = 30;
+const TERMINAL_DETECT_RADIUS_M = 6000;
 
 const BUS_STOPS = [
   { id:"baegot", name:"배곧 롯데마트", lat:37.3688, lng:126.7265, term:true, major:true, outSpot:"롯데마트 앞 택시승강장", outT:["06:38","18:40"], backSpot:"중심상가 버스정류장", backS:["09:20","21:20"], backR:["19:20","14:20"] },
   { id:"oido", name:"오이도역", lat:37.362438, lng:126.737438, outSpot:"보영A 입구앞 세븐일레븐", outT:["06:41","18:45"], backSpot:"(구)버스정류장", backS:["09:14","21:14"], backR:["19:15","14:15"] },
   { id:"jeongwang", name:"정왕역", lat:37.351463, lng:126.740547, major:true, outSpot:"꽃가게단지 옆 (우회전 코너)", outT:["06:44","18:50"], backSpot:"대관광장 앞 횡단보도", backS:["09:12","21:12"], backR:["19:12","14:12"] },
   { id:"world", name:"월드메르디앙A", lat:37.356063, lng:126.729938, outSpot:"113동 앞 버스정류장", outT:["06:50","18:56"], backSpot:"세종주공3차A 312동 정류장", backS:["09:04","21:04"], backR:["19:04","14:04"] },
-  { id:"shindonga1", name:"신동아 1차A", lat:37.359563, lng:126.727313, outSpot:"단지상가 앞", outT:["06:54","18:59"], backSpot:"단지상가 건너편", backS:["09:03","21:03"], backR:["19:03","14:03"] },
-  { id:"shindonga2", name:"신동아 2차A", lat:37.358888, lng:126.722891, outSpot:"단지상가 앞", outT:["06:56","19:00"], backSpot:"단지상가 건너편", backS:["09:02","21:02"], backR:["19:02","14:02"] },
+  { id:"shindonga1", name:"신동아 1차A", lat:37.358888, lng:126.722828, outSpot:"단지상가 앞", outT:["06:54","18:59"], backSpot:"단지상가 건너편", backS:["09:03","21:03"], backR:["19:03","14:03"] },
+  { id:"shindonga2", name:"신동아 2차A", lat:37.357663, lng:126.721672, outSpot:"단지상가 앞", outT:["06:56","19:00"], backSpot:"단지상가 건너편", backS:["09:02","21:02"], backR:["19:02","14:02"] },
   { id:"gyeryong", name:"계룡A", lat:37.356063, lng:126.720188, outSpot:"단지상가 앞", outT:["06:57","19:02"], backSpot:"단지상가 건너편", backS:["09:01","21:01"], backR:["19:01","14:01"] },
   { id:"yeongheung", name:"영흥 터미널", lat:37.2555, lng:126.4958, major:true, outSpot:"우리의원 앞 주차장", outT:["07:35","19:35"], backSpot:"우리의원 건너편", backS:["08:31","20:31"], backR:["18:23","13:23"] },
   { id:"bulgeunnori", name:"붉은노리 삼거리", lat:37.2492, lng:126.4675, outSpot:"중앙슈퍼 옆", outT:["07:38","19:38"], backSpot:"로터리", backS:["08:28","20:28"], backR:["18:20","13:20"] },
@@ -196,11 +204,16 @@ const isAndroidApp = typeof window.Android !== "undefined" && window.Android !==
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 if (isIOS) $("iosNotice").style.display = "block";
 
-let currentDirection = new Date().getHours() < 12 ? "out" : "back";
+function detectDirByTime() {
+  const h = new Date().getHours();
+  return (h >= 5 && h < 8) ? "out" : "back";
+}
+
+let currentDirection = detectDirByTime();
 let isDirectionManual = false, currentTab = "map", latestBusData = null;
 let isSharing = false, watchId = null, wakeLock = null, shareStartedAt = 0, lastSentAt = 0, arrivalArmed = false, maxTimer = null;
-let map = null, busMarker = null, myMarker = null, guideLine = null, stopMarkers = {}, hasCentered = false;
-let busRef = null;
+let map = null, routeBounds = null, busMarker = null, myMarker = null, guideLine = null, stopMarkers = {}, hasCentered = false;
+let busRef = null, hasConnectedOnce = false;
 
 function getStops(dir) { return dir === "back" ? [...BUS_STOPS].reverse() : [...BUS_STOPS]; }
 function distM(a, b, c, d) {
@@ -222,6 +235,14 @@ function findNearest(lat, lng, dir) {
   list.forEach((s, i) => { const d = distM(lat, lng, s.lat, s.lng); if (d < min) { min = d; idx = i; } });
   return { stop: list[idx], index: idx, distanceM: min };
 }
+function isDataLive(d) {
+  if (!d || d.sharing !== true) return false;
+  if (d.startedAt && Date.now() > d.startedAt + MAX_SHARE_MINUTES * 60000) return false;
+  return true;
+}
+function isOwnSession() {
+  return !latestBusData || !latestBusData.sessionId || latestBusData.sessionId === SESSION_ID;
+}
 
 function switchTab(tab) {
   currentTab = tab;
@@ -241,9 +262,9 @@ function renderTimeline() {
   $("routeSummaryTitle").textContent = (isBack ? "퇴근행" : "출근행") + " 노선 (" + list.length + "개 정류소)";
   $("routeSummaryBadge").textContent = isBack ? "영흥 → 시흥" : "시흥 → 영흥";
   let near = null;
-  if (latestBusData && typeof latestBusData.lat === "number" && latestBusData.sharing === true) {
-    const expired = latestBusData.startedAt && Date.now() > latestBusData.startedAt + MAX_SHARE_MINUTES * 60000;
-    if (!expired) near = findNearest(latestBusData.lat, latestBusData.lng, currentDirection);
+  if (latestBusData && typeof latestBusData.lat === "number" && isDataLive(latestBusData)) {
+    const busDir = latestBusData.direction || "out";
+    if (busDir === currentDirection) near = findNearest(latestBusData.lat, latestBusData.lng, currentDirection);
   }
   $("stopTimelineList").innerHTML = list.map((s, i) => {
     const isNear = near && near.index === i, isPassed = near && i < near.index;
@@ -285,8 +306,8 @@ function setDirectionUI(dir) {
   if (map) renderMapStops();
   renderTimeline();
 }
-$("btnDirOut").onclick = () => { isDirectionManual = true; setDirectionUI("out"); if (isSharing && busRef) busRef.update({ direction: "out" }); };
-$("btnDirBack").onclick = () => { isDirectionManual = true; setDirectionUI("back"); if (isSharing && busRef) busRef.update({ direction: "back" }); };
+$("btnDirOut").onclick = () => { isDirectionManual = true; setDirectionUI("out"); if (isSharing && busRef && isOwnSession()) busRef.update({ direction: "out" }); };
+$("btnDirBack").onclick = () => { isDirectionManual = true; setDirectionUI("back"); if (isSharing && busRef && isOwnSession()) busRef.update({ direction: "back" }); };
 
 function updateZoomCls() { if (map) $("map").classList.toggle("zoom-low", map.getZoom() < 13); }
 function fitAllStops() { if (map) map.fitBounds(L.latLngBounds(BUS_STOPS.map((s) => [s.lat, s.lng])).pad(0.14)); }
@@ -318,18 +339,18 @@ try {
   if (typeof L === "undefined") {
     showBanner("지도 라이브러리(Leaflet) 로딩 실패: 광고 차단(uBlock 등) 또는 네트워크를 확인해 주세요.", true);
   } else {
-    const ROUTE_BOUNDS = L.latLngBounds([37.20, 126.40], [37.41, 126.80]);
+    routeBounds = L.latLngBounds([37.20, 126.40], [37.41, 126.80]);
     map = L.map("map", {
       zoomControl: false,
       minZoom: 11,
       maxZoom: 16,
-      maxBounds: ROUTE_BOUNDS,
+      maxBounds: routeBounds,
       maxBoundsViscosity: 1.0
     }).setView([37.31, 126.59], 11);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 16,
-      bounds: ROUTE_BOUNDS,
+      bounds: routeBounds,
       keepBuffer: 0,
       updateWhenIdle: true,
       updateWhenZooming: false,
@@ -337,7 +358,7 @@ try {
     }).addTo(map);
 
     map.on("zoomend", updateZoomCls);
-    setTimeout(() => { map.invalidateSize(); fitAllStops(); }, 250);
+    setTimeout(() => { map.invalidateSize(); if (!hasCentered) fitAllStops(); }, 250);
   }
 } catch (e) {
   showBanner("지도 초기화 오류: " + e.message, true);
@@ -347,6 +368,10 @@ setDirectionUI(currentDirection);
 
 function renderViewer() {
   const d = latestBusData;
+  if (isSharing && d && d.sessionId && d.sessionId !== SESSION_ID && isDataLive(d)) {
+    stopShare("다른 탑승자가 공유를 이어받음", true);
+  }
+
   if (!d || typeof d.lat !== "number" || typeof d.lng !== "number") {
     $("statusDot").className = "dot";
     $("statusTitle").textContent = "운행 정보 없음";
@@ -354,10 +379,13 @@ function renderViewer() {
     $("statusPill").className = "pill"; $("statusPill").textContent = "대기 중";
     return;
   }
+
   const now = Date.now(), ageMin = d.updatedAt ? (now - d.updatedAt) / 60000 : 999;
-  const expired = d.startedAt && now > d.startedAt + MAX_SHARE_MINUTES * 60000;
-  const live = d.sharing === true && !expired, stale = ageMin > STALE_MINUTES;
-  if (d.direction && !isDirectionManual && !isSharing && d.direction !== currentDirection) setDirectionUI(d.direction);
+  const live = isDataLive(d), stale = ageMin > STALE_MINUTES;
+
+  if (live && d.direction && !isDirectionManual && !isSharing && d.direction !== currentDirection) {
+    setDirectionUI(d.direction);
+  }
   const dir = d.direction || currentDirection;
 
   if (map) {
@@ -367,7 +395,10 @@ function renderViewer() {
     });
     if (busMarker) { busMarker.setLatLng([d.lat, d.lng]); busMarker.setIcon(icon); }
     else busMarker = L.marker([d.lat, d.lng], { icon, zIndexOffset: 200 }).addTo(map);
-    if (!hasCentered && live) { map.setView([d.lat, d.lng], 14); hasCentered = true; }
+    if (!hasCentered && live && (!routeBounds || routeBounds.contains([d.lat, d.lng]))) {
+      map.setView([d.lat, d.lng], 14);
+      hasCentered = true;
+    }
   }
 
   const near = findNearest(d.lat, d.lng, dir), ago = fmtAgo(d.updatedAt);
@@ -399,7 +430,13 @@ try {
     busRef = db.ref("buses/" + BUS_DB_KEY);
     busRef.on("value", (snap) => { latestBusData = snap.val(); renderViewer(); });
     db.ref(".info/connected").on("value", (snap) => {
-      if (snap.val() === false) showBanner("네트워크 연결이 끊어졌습니다. 마지막 확인 위치를 표시합니다.", true);
+      if (snap.val() === true) {
+        hasConnectedOnce = true;
+        if (isOfflineBanner) hideBanner();
+        if (isSharing && isOwnSession()) busRef.onDisconnect().update({ sharing: false }).catch(() => {});
+      } else if (hasConnectedOnce) {
+        showBanner("네트워크 연결이 끊어졌습니다. 마지막 확인 위치를 표시합니다.", true, true);
+      }
     });
     setInterval(renderViewer, 30000);
   }
@@ -423,15 +460,24 @@ function geoErrText(e) {
 
 $("btnFitRoute").onclick = fitAllStops;
 $("btnCenterBus").onclick = () => {
-  if (map && latestBusData && typeof latestBusData.lat === "number") map.setView([latestBusData.lat, latestBusData.lng], 15);
-  else showBanner("표시할 버스 위치가 아직 없습니다.", false);
+  if (map && latestBusData && typeof latestBusData.lat === "number") {
+    const ll = [latestBusData.lat, latestBusData.lng];
+    if (routeBounds && !routeBounds.contains(ll)) showBanner("버스 위치가 시흥~영흥 노선 구역 밖에 있습니다.", false);
+    else map.setView(ll, 15);
+  } else {
+    showBanner("표시할 버스 위치가 아직 없습니다.", false);
+  }
 };
 $("btnCenterMe").onclick = () => {
   showBanner("내 위치를 찾는 중입니다...", false);
   fetchLocFast((p) => {
-    $("topBanner").classList.remove("show");
+    hideBanner();
     if (!map) return;
     const ll = [p.coords.latitude, p.coords.longitude];
+    if (routeBounds && !routeBounds.contains(ll)) {
+      showBanner("현재 위치가 시흥~영흥 노선 구역 밖에 있습니다.", false);
+      return;
+    }
     if (!myMarker) myMarker = L.circleMarker(ll, { radius: 7, fillColor: "#191f28", color: "#fff", weight: 2.5, fillOpacity: 0.95 }).addTo(map);
     else myMarker.setLatLng(ll);
     map.setView(ll, 15);
@@ -458,7 +504,7 @@ function startShare() {
     const { latitude: lat, longitude: lng, accuracy } = pos.coords, now = Date.now();
     if (!isDirectionManual) {
       const ds = distM(lat, lng, START_PT[0], START_PT[1]), de = distM(lat, lng, END_PT[0], END_PT[1]);
-      const autoDir = ds < 3000 && ds < de ? "out" : (de < 3000 && de < ds ? "back" : (new Date().getHours() < 12 ? "out" : "back"));
+      const autoDir = ds < TERMINAL_DETECT_RADIUS_M && ds < de ? "out" : (de < TERMINAL_DETECT_RADIUS_M && de < ds ? "back" : detectDirByTime());
       setDirectionUI(autoDir);
     }
     busRef.transaction((cur) => {
@@ -469,12 +515,14 @@ function startShare() {
       if (err) { setShareUI(false); return showBanner("공유 오류: " + err.message, true); }
       if (!committed) { setShareUI(false); return showBanner("이미 다른 탑승자가 버스 위치를 공유 중입니다.", false); }
       isSharing = true; shareStartedAt = now; lastSentAt = now; setShareUI(true); keepAwake();
+      busRef.onDisconnect().update({ sharing: false }).catch(() => {});
       const dest = currentDirection === "back" ? START_PT : END_PT;
       arrivalArmed = distM(lat, lng, dest[0], dest[1]) > ARRIVAL_RADIUS_M;
       if (maxTimer) clearTimeout(maxTimer);
       maxTimer = setTimeout(() => { if (isSharing) stopShare("90분 경과"); }, MAX_SHARE_MINUTES * 60000);
       watchId = navigator.geolocation.watchPosition((p) => {
         if (!isSharing) return;
+        if (!isOwnSession()) return stopShare("다른 탑승자가 공유를 이어받음", true);
         const t = Date.now(), { latitude: la, longitude: ln, accuracy: ac } = p.coords;
         if (ac > MAX_ACCURACY_M) return;
         if (t - shareStartedAt > MAX_SHARE_MINUTES * 60000) return stopShare("90분 경과");
@@ -489,14 +537,17 @@ function startShare() {
   }, (e) => { $("shareBtn").disabled = false; setShareUI(false); showBanner(geoErrText(e), true); });
 }
 
-function stopShare(reason) {
+function stopShare(reason, skipDbUpdate) {
   if (isAndroidApp && typeof window.Android.stopShare === "function") { window.Android.stopShare(); isSharing = false; setShareUI(false); return; }
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
   if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
   if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
   const was = isSharing; isSharing = false; setShareUI(false);
+  if (busRef) busRef.onDisconnect().cancel().catch(() => {});
   if (was && busRef) {
-    busRef.update({ sharing: false, updatedAt: Date.now() }).catch(() => {});
+    if (!skipDbUpdate && isOwnSession()) {
+      busRef.update({ sharing: false, updatedAt: Date.now() }).catch(() => {});
+    }
     if (reason) {
       const m = "공유가 종료되었어요 (사유: " + reason + ").";
       showBanner(m, true);
@@ -507,7 +558,11 @@ function stopShare(reason) {
 }
 
 $("shareBtn").onclick = () => isSharing ? stopShare() : startShare();
-window.addEventListener("pagehide", () => { if (isSharing && !isAndroidApp && busRef) busRef.update({ sharing: false, updatedAt: Date.now() }); });
+window.addEventListener("pagehide", () => {
+  if (isSharing && !isAndroidApp && busRef && isOwnSession()) {
+    busRef.update({ sharing: false, updatedAt: Date.now() });
+  }
+});
 </script>
 </body>
 </html>
