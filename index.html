@@ -154,7 +154,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-// 1) 공통 UI 및 오류 진단 (외부 라이브러리와 무관하게 최우선 실행)
 const $ = (id) => document.getElementById(id);
 function showBanner(msg, isWarn) {
   $("bannerText").textContent = msg;
@@ -179,12 +178,12 @@ const SEND_INTERVAL_MS = 5000, ARRIVAL_RADIUS_M = 120, MAX_SHARE_MINUTES = 90, S
 
 const BUS_STOPS = [
   { id:"baegot", name:"배곧 롯데마트", lat:37.3688, lng:126.7265, term:true, major:true, outSpot:"롯데마트 앞 택시승강장", outT:["06:38","18:40"], backSpot:"중심상가 버스정류장", backS:["09:20","21:20"], backR:["19:20","14:20"] },
-  { id:"oido", name:"오이도역", lat:37.3622, lng:126.7381, outSpot:"보영A 입구앞 세븐일레븐", outT:["06:41","18:45"], backSpot:"(구)버스정류장", backS:["09:14","21:14"], backR:["19:15","14:15"] },
-  { id:"jeongwang", name:"정왕역", lat:37.3515, lng:126.7428, major:true, outSpot:"꽃가게단지 옆 (우회전 코너)", outT:["06:44","18:50"], backSpot:"대관광장 앞 횡단보도", backS:["09:12","21:12"], backR:["19:12","14:12"] },
-  { id:"world", name:"월드메르디앙A", lat:37.3468, lng:126.7369, outSpot:"113동 앞 버스정류장", outT:["06:50","18:56"], backSpot:"세종주공3차A 312동 정류장", backS:["09:04","21:04"], backR:["19:04","14:04"] },
-  { id:"shindonga1", name:"신동아 1차A", lat:37.3435, lng:126.7335, outSpot:"단지상가 앞", outT:["06:54","18:59"], backSpot:"단지상가 건너편", backS:["09:03","21:03"], backR:["19:03","14:03"] },
-  { id:"shindonga2", name:"신동아 2차A", lat:37.3412, lng:126.7318, outSpot:"단지상가 앞", outT:["06:56","19:00"], backSpot:"단지상가 건너편", backS:["09:02","21:02"], backR:["19:02","14:02"] },
-  { id:"gyeryong", name:"계룡A", lat:37.3385, lng:126.7295, outSpot:"단지상가 앞", outT:["06:57","19:02"], backSpot:"단지상가 건너편", backS:["09:01","21:01"], backR:["19:01","14:01"] },
+  { id:"oido", name:"오이도역", lat:37.362438, lng:126.737438, outSpot:"보영A 입구앞 세븐일레븐", outT:["06:41","18:45"], backSpot:"(구)버스정류장", backS:["09:14","21:14"], backR:["19:15","14:15"] },
+  { id:"jeongwang", name:"정왕역", lat:37.351813, lng:126.742813, major:true, outSpot:"꽃가게단지 옆 (우회전 코너)", outT:["06:44","18:50"], backSpot:"대관광장 앞 횡단보도", backS:["09:12","21:12"], backR:["19:12","14:12"] },
+  { id:"world", name:"월드메르디앙A", lat:37.356063, lng:126.729938, outSpot:"113동 앞 버스정류장", outT:["06:50","18:56"], backSpot:"세종주공3차A 312동 정류장", backS:["09:04","21:04"], backR:["19:04","14:04"] },
+  { id:"shindonga1", name:"신동아 1차A", lat:37.359563, lng:126.727313, outSpot:"단지상가 앞", outT:["06:54","18:59"], backSpot:"단지상가 건너편", backS:["09:03","21:03"], backR:["19:03","14:03"] },
+  { id:"shindonga2", name:"신동아 2차A", lat:37.357663, lng:126.721672, outSpot:"단지상가 앞", outT:["06:56","19:00"], backSpot:"단지상가 건너편", backS:["09:02","21:02"], backR:["19:02","14:02"] },
+  { id:"gyeryong", name:"계룡A", lat:37.356063, lng:126.720188, outSpot:"단지상가 앞", outT:["06:57","19:02"], backSpot:"단지상가 건너편", backS:["09:01","21:01"], backR:["19:01","14:01"] },
   { id:"yeongheung", name:"영흥 터미널", lat:37.2555, lng:126.4958, major:true, outSpot:"우리의원 앞 주차장", outT:["07:35","19:35"], backSpot:"우리의원 건너편", backS:["08:31","20:31"], backR:["18:23","13:23"] },
   { id:"bulgeunnori", name:"붉은노리 삼거리", lat:37.2492, lng:126.4675, outSpot:"중앙슈퍼 옆", outT:["07:38","19:38"], backSpot:"로터리", backS:["08:28","20:28"], backR:["18:20","13:20"] },
   { id:"powerplant", name:"발전소(영흥순대국)", lat:37.242938, lng:126.447312, term:true, major:true, outSpot:"영흥순대국 앞 (CU삼거리 · 종점)", outT:["07:41","19:41"], backSpot:"CU편의점 앞 (기점)", backS:["08:25","20:25"], backR:["18:16","13:16"] }
@@ -289,7 +288,6 @@ function setDirectionUI(dir) {
 $("btnDirOut").onclick = () => { isDirectionManual = true; setDirectionUI("out"); if (isSharing && busRef) busRef.update({ direction: "out" }); };
 $("btnDirBack").onclick = () => { isDirectionManual = true; setDirectionUI("back"); if (isSharing && busRef) busRef.update({ direction: "back" }); };
 
-// 2) Leaflet 지도 초기화
 function updateZoomCls() { if (map) $("map").classList.toggle("zoom-low", map.getZoom() < 13); }
 function fitAllStops() { if (map) map.fitBounds(L.latLngBounds(BUS_STOPS.map((s) => [s.lat, s.lng])).pad(0.14)); }
 
@@ -320,8 +318,24 @@ try {
   if (typeof L === "undefined") {
     showBanner("지도 라이브러리(Leaflet) 로딩 실패: 광고 차단(uBlock 등) 또는 네트워크를 확인해 주세요.", true);
   } else {
-    map = L.map("map", { zoomControl: false, minZoom: 10, maxZoom: 18 }).setView([37.31, 126.59], 11);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" }).addTo(map);
+    const ROUTE_BOUNDS = L.latLngBounds([37.20, 126.40], [37.41, 126.80]);
+    map = L.map("map", {
+      zoomControl: false,
+      minZoom: 11,
+      maxZoom: 16,
+      maxBounds: ROUTE_BOUNDS,
+      maxBoundsViscosity: 1.0
+    }).setView([37.31, 126.59], 11);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 16,
+      bounds: ROUTE_BOUNDS,
+      keepBuffer: 0,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
     map.on("zoomend", updateZoomCls);
     setTimeout(() => { map.invalidateSize(); fitAllStops(); }, 250);
   }
@@ -331,7 +345,6 @@ try {
 
 setDirectionUI(currentDirection);
 
-// 3) Firebase 초기화 및 실시간 수신
 function renderViewer() {
   const d = latestBusData;
   if (!d || typeof d.lat !== "number" || typeof d.lng !== "number") {
@@ -394,7 +407,6 @@ try {
   showBanner("Firebase 초기화 오류: " + e.message, true);
 }
 
-// 4) 위치 조회 및 공유 로직 (Firefox 호환)
 function fetchLocFast(ok, fail) {
   if (!navigator.geolocation) return fail({ code: 0, message: "위치 기능 미지원" });
   navigator.geolocation.getCurrentPosition(ok, (e1) => {
