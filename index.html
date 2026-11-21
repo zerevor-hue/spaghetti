@@ -8412,7 +8412,7 @@ instantBootFromCache();
 if(window._fbReady){onFbReady();}
 else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if(!window._fbReady&&!_instantBooted){document.getElementById('splash').classList.add('h');document.getElementById('login-screen').classList.remove('h');const e=document.getElementById('lerr');e.textContent='서버 연결 실패';e.style.display='';}},5000);}
 </script>
-<!-- === 통근버스 탭 원클릭 통합 블록 (노선도 기본 · 지도 지연로딩) === -->
+  <!-- === 통근버스 탭 원클릭 통합 블록 (최종 안정화판: 노선도·출근행 기본 / 도착기록 / 2단 저용량 지도) === -->
 <style>
 .bnav{grid-template-columns:repeat(6,1fr)!important}
 .ni{font-size:.62rem!important}
@@ -8433,10 +8433,11 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
 .bus-tabs button{border:none;background:transparent;padding:6px;border-radius:8px;font-size:.76rem;font-weight:700;color:var(--tx2);cursor:pointer}
 .bus-tabs button.active{background:var(--bg2);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .bus-stage{position:relative;flex:1;width:100%;min-height:180px;overflow:hidden;border-radius:var(--r);border:1px solid var(--bd);box-shadow:var(--pill-sh);background:var(--bg2)}
-#bus-map{position:absolute;top:0;right:0;bottom:0;left:0;z-index:1;background:#e9eef5}
+#bus-map{position:absolute;top:0;right:0;bottom:0;left:0;z-index:1;background:#dbe6f0}
 .bus-banner{position:absolute;top:10px;left:10px;right:10px;z-index:800;background:rgba(25,31,40,.92);color:#fff;padding:9px 12px;border-radius:11px;font-size:.76rem;line-height:1.4;display:none;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .bus-banner.show{display:flex}
 .bus-banner.warn{background:rgba(240,68,82,.95)}
+.bus-banner.ok{background:rgba(0,160,96,.95)}
 .bus-banner button{background:none;border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px}
 .bus-fabs{position:absolute;right:12px;bottom:14px;display:none;flex-direction:column;gap:7px;z-index:500}
 .bus-fab{width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--bd2);box-shadow:0 3px 12px rgba(0,0,0,.16);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx2)}
@@ -8446,8 +8447,12 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
 .bus-rsum{background:var(--bg2);border-radius:14px;padding:11px 13px;margin-bottom:9px;border:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .bus-rsum-t{font-size:.82rem;font-weight:800;color:var(--tx)}
 .bus-rsum-d{font-size:.7rem;color:var(--tx3);margin-top:2px}
+.bus-rsum-r{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .bus-rbadge{font-size:.66rem;font-weight:700;padding:4px 8px;border-radius:7px;background:var(--bp-s);color:var(--bp);white-space:nowrap}
 #page-bus.dir-back .bus-rbadge{background:var(--bb-s);color:var(--bb)}
+.bus-log-btn{border:1px solid var(--bd2);background:var(--bg3);color:var(--tx);font-size:.68rem;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.bus-log-btn.on{background:var(--bp);color:#fff;border-color:transparent}
+#page-bus.dir-back .bus-log-btn.on{background:var(--bb)}
 .bus-tl{background:var(--bg2);border-radius:14px;padding:6px 12px;border:1px solid var(--bd)}
 .bus-srow{position:relative;display:flex;align-items:flex-start;gap:10px;padding:11px 3px;cursor:pointer;border-radius:9px}
 .bus-srow:active{background:var(--bg3)}
@@ -8468,8 +8473,8 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
 .bus-stimes{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
 .bus-tchip{font-size:.66rem;padding:2px 6px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)}
 .bus-tchip strong{color:var(--tx)}
+.bus-tchip.avg{background:var(--bok-s);border-color:rgba(0,176,107,.25);color:var(--bok);font-weight:700}
 .bus-sgo{font-size:.68rem;color:var(--tx3);align-self:center;flex-shrink:0}
-/* 구간 이동 중 실시간 버스 진행 표시 바 */
 .bus-transit{position:relative;display:flex;align-items:center;gap:10px;padding:4px 3px 6px}
 .bus-transit::before{content:"";position:absolute;left:13px;top:-8px;bottom:-8px;width:2px;background:var(--bok);opacity:.55;z-index:1}
 .bus-transit-dot{position:relative;z-index:2;width:22px;height:22px;border-radius:50%;background:var(--bok);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 4px var(--bok-s)}
@@ -8477,8 +8482,37 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
 .bus-transit-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:.73rem;font-weight:800;color:var(--bok)}
 .bus-transit-bar{height:4px;background:rgba(0,176,107,.18);border-radius:99px;overflow:hidden;margin-top:5px}
 .bus-transit-fill{height:100%;background:var(--bok);border-radius:99px;transition:width .3s ease}
+.bus-log-panel{display:none}
+.bus-log-panel.active{display:block}
+.bus-log-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.bus-log-seg{display:flex;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:2px}
+.bus-log-seg button{border:none;background:transparent;padding:4px 10px;font-size:.71rem;font-weight:700;color:var(--tx2);border-radius:7px;cursor:pointer}
+.bus-log-seg button.active{background:var(--bp);color:#fff}
+#page-bus.dir-back .bus-log-seg button.active{background:var(--bb)}
+.bus-log-acts{display:flex;gap:5px}
+.bus-log-acts button{border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:.68rem;font-weight:700;padding:5px 9px;border-radius:8px;cursor:pointer}
+.bus-log-acts button:active{background:var(--bg3)}
+.bus-log-card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;margin-bottom:9px}
+.bus-log-ctitle{font-size:.74rem;font-weight:800;color:var(--tx2);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.bus-avg-tbl{width:100%;border-collapse:collapse;font-size:.72rem}
+.bus-avg-tbl th,.bus-avg-tbl td{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:center}
+.bus-avg-tbl th{font-size:.66rem;color:var(--tx3);font-weight:700}
+.bus-avg-tbl td:first-child,.bus-avg-tbl th:first-child{text-align:left}
+.bus-avg-tbl tr:last-child td{border-bottom:none}
+.bus-diff-late{color:var(--berr);font-weight:700;font-size:.66rem}
+.bus-diff-early{color:var(--bok);font-weight:700;font-size:.66rem}
+.bus-day-row{padding:8px 0;border-bottom:1px solid var(--bd)}
+.bus-day-row:last-child{border-bottom:none;padding-bottom:2px}
+.bus-day-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.bus-day-dt{font-size:.74rem;font-weight:800;color:var(--tx)}
+.bus-day-del{border:none;background:transparent;color:var(--tx3);font-size:.66rem;cursor:pointer;padding:2px 6px;border-radius:5px}
+.bus-day-del:active{background:var(--bg3);color:var(--berr)}
+.bus-day-chips{display:flex;flex-wrap:wrap;gap:4px}
+.bus-day-chip{font-size:.66rem;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:2px 6px;color:var(--tx2)}
+.bus-day-chip b{color:var(--tx);margin-left:3px}
+.bus-empty{text-align:center;padding:18px 8px;font-size:.74rem;color:var(--tx3);line-height:1.5}
 .bus-sheet{background:var(--bg2);border:1px solid var(--bd);box-shadow:var(--pill-sh);border-radius:var(--r);padding:10px 12px;flex-shrink:0}
-.bus-stcard{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--bd);padding:9px 11px;border-radius:11px;margin-bottom:8px;gap:8px}
+.bus-stcard{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--bd);padding:9px 11px;border-radius:11px;margin-bottom:8px;gap:8px;cursor:pointer}
 .bus-stl{display:flex;align-items:center;gap:9px;min-width:0}
 .bus-dot{width:9px;height:9px;border-radius:50%;background:var(--tx3);flex-shrink:0}
 .bus-dot.live{background:var(--bok);box-shadow:0 0 0 4px var(--bok-s);animation:busPulse 1.8s infinite}
@@ -8549,18 +8583,46 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     </div>
     <div class="bus-rview active" id="bus-rview">
       <div class="bus-rsum">
-        <div>
+        <div style="min-width:0">
           <div class="bus-rsum-t" id="bus-rsum-title">출근행 노선 (10개 정류소)</div>
           <div class="bus-rsum-d" id="bus-rsum-desc">정류소를 누르면 지도에서 위치를 확인할 수 있습니다.</div>
         </div>
-        <span class="bus-rbadge" id="bus-rsum-badge">시흥 → 영흥</span>
+        <div class="bus-rsum-r">
+          <span class="bus-rbadge" id="bus-rsum-badge">시흥 → 영흥</span>
+          <button type="button" class="bus-log-btn" id="bus-log-toggle">도착 기록</button>
+        </div>
       </div>
+
       <div class="bus-tl" id="bus-stop-list"></div>
+
+      <div class="bus-log-panel" id="bus-log-panel">
+        <div class="bus-log-bar">
+          <div class="bus-log-seg">
+            <button type="button" class="active" id="bus-log-am">오전</button>
+            <button type="button" id="bus-log-pm">오후</button>
+          </div>
+          <div class="bus-log-acts">
+            <button type="button" id="bus-log-copy">CSV 복사</button>
+            <button type="button" id="bus-log-refresh">새로고침</button>
+          </div>
+        </div>
+        <div class="bus-log-card">
+          <div class="bus-log-ctitle">
+            <span id="bus-log-avg-title">정류소별 평균 도착 시각 (최근 30일)</span>
+            <span id="bus-log-days-cnt" style="color:var(--tx3);font-weight:600">0일</span>
+          </div>
+          <div id="bus-log-avg-wrap"></div>
+        </div>
+        <div class="bus-log-card">
+          <div class="bus-log-ctitle"><span>일자별 도착 기록</span></div>
+          <div id="bus-log-days-wrap"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="bus-sheet">
-    <div class="bus-stcard">
+    <div class="bus-stcard" id="bus-stcard">
       <div class="bus-stl">
         <span id="bus-dot" class="bus-dot"></span>
         <div style="min-width:0">
@@ -8592,7 +8654,7 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     else nav.appendChild(btn);
   }
 
-  // 2) 기존 goTab 함수에 버스 탭 전환 자동 연결
+  // 2) 기존 goTab / 안드로이드 뒤로가기(handleBackPress) 자동 연결
   if(typeof window.goTab==='function'&&!window._busGoTabWrapped){
     const _origGoTab=window.goTab;
     window._busGoTabWrapped=true;
@@ -8610,8 +8672,22 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       }
     };
   }
+  if(typeof window.handleBackPress==='function'&&!window._busBackWrapped){
+    const _origBack=window.handleBackPress;
+    window._busBackWrapped=true;
+    window.handleBackPress=function(){
+      const bp=$b('page-bus');
+      if(bp&&bp.classList.contains('on')){
+        if(subTab==='map'){switchSub('route');return true;}
+        if(showLogs){setLogsView(false);return true;}
+      }
+      return _origBack();
+    };
+    window.onBackPressed=window.handleBackPress;
+    window.onAndroidBack=window.handleBackPress;
+  }
 
-  // 3) 통근버스 실시간 위치 핵심 로직
+  // 3) 통근버스 실시간 위치 + 도착 기록 핵심 로직
   const BUS_SVG='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="14" rx="3"/><path d="M4 11h16"/><path d="M8 18v2"/><path d="M16 18v2"/></svg>';
   const BUS_FB_CFG={
     apiKey:"AIzaSyCnpGR_zNBP-9quyF-OCnDC_4FbG4w8xlc",
@@ -8623,7 +8699,8 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     appId:"1:434862222996:web:e7e2a67c5188542bc90e81"
   };
   const BUS_DB_KEY='0790';
-  const SEND_MS=5000, ARRIVAL_M=120, MAX_MIN=90, STALE_MIN=15, MAX_ACC_M=200, LOCK_S=30, DETECT_M=6000;
+  const LOG_CACHE_KEY='bus_logs_cache_'+BUS_DB_KEY;
+  const SEND_MS=5000, ARRIVAL_M=150, LEAVE_ARM_M=300, STOP_LOG_M=150, MAX_MIN=90, STALE_MIN=15, MAX_ACC_M=200, ARR_ACC_M=90, LOCK_S=30, DETECT_M=6000;
   const STOPS=[
     {id:'baegot',name:'배곧 롯데마트',lat:37.3688,lng:126.7265,term:true,major:true,outSpot:'롯데마트 앞 택시승강장',outT:['06:38','18:40'],backSpot:'중심상가 버스정류장',backS:['09:20','21:20'],backR:['19:20','14:20']},
     {id:'oido',name:'오이도역',lat:37.362438,lng:126.737438,outSpot:'보영A 입구앞 세븐일레븐',outT:['06:41','18:45'],backSpot:'(구)버스정류장',backS:['09:14','21:14'],backR:['19:15','14:15']},
@@ -8636,27 +8713,208 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     {id:'bulgeunnori',name:'붉은노리 삼거리',lat:37.2492,lng:126.4675,outSpot:'중앙슈퍼 옆',outT:['07:38','19:38'],backSpot:'로터리',backS:['08:28','20:28'],backR:['18:20','13:20']},
     {id:'powerplant',name:'발전소(영흥순대국)',lat:37.242938,lng:126.447312,term:true,major:true,outSpot:'영흥순대국 앞 (CU삼거리 · 종점)',outT:['07:41','19:41'],backSpot:'CU편의점 앞 (기점)',backS:['08:25','20:25'],backR:['18:16','13:16']}
   ];
-  const START_PT=[STOPS[0].lat,STOPS[0].lng], END_PT=[STOPS[STOPS.length-1].lat,STOPS[STOPS.length-1].lng];
+  const START_STOP=STOPS[0], END_STOP=STOPS[STOPS.length-1];
+  const START_PT=[START_STOP.lat,START_STOP.lng], END_PT=[END_STOP.lat,END_STOP.lng];
   const SESS='bs_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
 
   let uiBound=false, mapInited=false, fbBound=false, hasConnOnce=false, isOfflineB=false;
-  let dir=(new Date().getHours()>=5&&new Date().getHours()<8)?'out':'back';
-  let dirManual=false, subTab='route', latest=null;
-  let sharing=false, watchId=null, wakeLock=null, startedAt=0, lastSent=0, arrArmed=false, maxT=null, viewIv=null;
-  let map=null, bounds=null, busMk=null, myMk=null, gLine=null, stopMks={}, centered=false, busRef=null;
+  let dir='out', dirManual=false, subTab='route', showLogs=false, logAmPm='am', latest=null;
+  let sharing=false, watchId=null, wakeLock=null, startedAt=0, lastSent=0, armStart=false, armEnd=false, arrHitStart=0, arrHitEnd=0, maxT=null, viewIv=null;
+  let loggedStops={};
+  let logsData=(function(){try{return JSON.parse(localStorage.getItem(LOG_CACHE_KEY)||'{}')||{};}catch(e){return {};}})();
+  let map=null, viewBounds=null, detailBounds=null, busMk=null, myMk=null, gLine=null, stopMks={}, centered=false, busRef=null, logsRef=null;
 
-  function showB(m,w,off){isOfflineB=!!off;$b('bus-banner-txt').textContent=m;$b('bus-banner').classList.toggle('warn',!!w);$b('bus-banner').classList.add('show');}
-  function hideB(){isOfflineB=false;$b('bus-banner').classList.remove('show');}
+  function isBusPageOn(){const p=$b('page-bus');return !!(p&&p.classList.contains('on'));}
+  function showB(m,w,off,ok){
+    isOfflineB=!!off;
+    $b('bus-banner-txt').textContent=m;
+    $b('bus-banner').classList.toggle('warn',!!w);
+    $b('bus-banner').classList.toggle('ok',!!ok);
+    $b('bus-banner').classList.add('show');
+  }
+  function hideB(){isOfflineB=false;$b('bus-banner').classList.remove('show','warn','ok');}
   function getStops(d){return d==='back'?[...STOPS].reverse():[...STOPS];}
   function distM(a,b,c,d){const R=6371000,r=Math.PI/180,x=(d-b)*r*Math.cos(((a+c)/2)*r),y=(c-a)*r;return Math.sqrt(x*x+y*y)*R;}
   function fmtD(m){return m<1000?Math.round(m/10)*10+'m':(m/1000).toFixed(1)+'km';}
   function fmtAgo(ts){if(!ts)return '시간 정보 없음';const s=Math.max(0,Math.floor((Date.now()-ts)/1000));if(s<60)return '방금 전';const m=Math.floor(s/60);return m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전';}
+  function pad2(n){return n<10?'0'+n:''+n;}
+  function fmtDateKey(ms){const d=new Date(ms);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+  function fmtHM(ms){const d=new Date(ms);return pad2(d.getHours())+':'+pad2(d.getMinutes());}
+  function hmToMin(hm){if(!hm||hm.indexOf(':')<0)return null;const p=hm.split(':');const h=+p[0],m=+p[1];return (isNaN(h)||isNaN(m))?null:h*60+m;}
+  function minToHM(total){const t=((Math.round(total)%1440)+1440)%1440;return pad2(Math.floor(t/60))+':'+pad2(t%60);}
+  function dowKo(dateKey){const p=dateKey.split('-');const d=new Date(+p[0],+p[1]-1,+p[2]);return ['일','월','화','수','목','금','토'][d.getDay()]||'';}
   function isLive(d){return !!(d&&d.sharing===true&&(!d.startedAt||Date.now()<=d.startedAt+MAX_MIN*60000));}
   function isOwn(){return !latest||!latest.sessionId||latest.sessionId===SESS;}
   function detectTimeDir(){const h=new Date().getHours();return (h>=5&&h<8)?'out':'back';}
 
-  // 정류소 구간 투영 계산 (정류소 인근 vs 두 정류소 사이 이동 중 진행률 %)
+  function saveLogsCache(){try{localStorage.setItem(LOG_CACHE_KEY,JSON.stringify(logsData));}catch(e){}}
+  function recordStopArrivals(lat,lng,nowMs,forceStopId){
+    const dateKey=fmtDateKey(nowMs), hm=fmtHM(nowMs), ampm=new Date(nowMs).getHours()<12?'am':'pm';
+    const slot=dir+'_'+ampm;
+    STOPS.forEach(s=>{
+      const hit=(forceStopId&&forceStopId===s.id)||distM(lat,lng,s.lat,s.lng)<=STOP_LOG_M;
+      if(!hit)return;
+      const memoKey=dateKey+'_'+slot+'_'+s.id;
+      if(loggedStops[memoKey])return;
+      if(logsData[dateKey]&&logsData[dateKey][slot]&&logsData[dateKey][slot].stops&&logsData[dateKey][slot].stops[s.id]){
+        loggedStops[memoKey]=true;
+        return;
+      }
+      loggedStops[memoKey]=true;
+      if(!logsData[dateKey])logsData[dateKey]={};
+      if(!logsData[dateKey][slot])logsData[dateKey][slot]={date:dateKey,dir:dir,ampm:ampm,stops:{}};
+      if(!logsData[dateKey][slot].stops)logsData[dateKey][slot].stops={};
+      logsData[dateKey][slot].stops[s.id]={t:hm,ts:nowMs};
+      logsData[dateKey][slot].updatedAt=nowMs;
+      saveLogsCache();
+      if(logsRef){
+        const slotRef=logsRef.child(dateKey+'/'+slot);
+        slotRef.update({date:dateKey,dir:dir,ampm:ampm,updatedAt:nowMs}).catch(()=>{});
+        slotRef.child('stops/'+s.id).transaction(cur=>cur?cur:{t:hm,ts:nowMs}).catch(()=>{});
+      }
+      if(isBusPageOn()&&subTab==='route'){
+        if(showLogs)renderLogPanel();
+        else renderTimeline();
+      }
+    });
+  }
+
+  function loadLogsFromDb(showToastOnDone){
+    if(!logsRef)return;
+    logsRef.orderByKey().limitToLast(30).once('value',snap=>{
+      const remote=snap.val();
+      if(remote&&typeof remote==='object'){
+        logsData=remote;
+        saveLogsCache();
+      }
+      if(isBusPageOn()&&subTab==='route'){
+        if(showLogs)renderLogPanel();
+        else renderTimeline();
+      }
+      if(showToastOnDone&&typeof window.showToast==='function')window.showToast('도착 기록을 불러왔습니다');
+    },()=>{
+      if(showToastOnDone&&typeof window.showToast==='function')window.showToast('서버 기록 접근 불가(로컬 기록 표시 중)');
+    });
+  }
+
+  function calcStopAverages(targetDir,targetAmPm){
+    const slot=targetDir+'_'+targetAmPm;
+    const buckets={};
+    let dayCnt=0;
+    const dayRows=[];
+    Object.keys(logsData||{}).sort().reverse().forEach(dk=>{
+      const entry=logsData[dk]&&logsData[dk][slot];
+      if(!entry||!entry.stops)return;
+      const stopKeys=Object.keys(entry.stops);
+      if(!stopKeys.length)return;
+      dayCnt++;
+      dayRows.push({date:dk,stops:entry.stops});
+      stopKeys.forEach(sid=>{
+        const m=hmToMin(entry.stops[sid]&&entry.stops[sid].t);
+        if(m===null)return;
+        if(!buckets[sid])buckets[sid]=[];
+        buckets[sid].push(m);
+      });
+    });
+    const avgMap={};
+    Object.keys(buckets).forEach(sid=>{
+      const arr=buckets[sid];
+      const avgMin=arr.reduce((a,b)=>a+b,0)/arr.length;
+      avgMap[sid]={hm:minToHM(avgMin),avgMin:Math.round(avgMin),cnt:arr.length};
+    });
+    return {avgMap,dayCnt,dayRows};
+  }
+
+  function renderLogPanel(){
+    $b('bus-log-am').classList.toggle('active',logAmPm==='am');
+    $b('bus-log-pm').classList.toggle('active',logAmPm==='pm');
+    const isBack=dir==='back';
+    const slotLabel=(isBack?'퇴근행':'출근행')+' '+(logAmPm==='am'?'오전':'오후');
+    $b('bus-log-avg-title').textContent=slotLabel+' 평균 도착 시각 (최근 30일)';
+    const {avgMap,dayCnt,dayRows}=calcStopAverages(dir,logAmPm);
+    $b('bus-log-days-cnt').textContent=dayCnt+'일 기록';
+
+    const list=getStops(dir);
+    if(!dayCnt){
+      $b('bus-log-avg-wrap').innerHTML='<div class="bus-empty">아직 '+slotLabel+' 도착 기록이 없습니다.<br>버스 탑승 후 위치 공유를 켜면 각 정류소 도착 시각이 자동으로 쌓입니다.</div>';
+      $b('bus-log-days-wrap').innerHTML='<div class="bus-empty">기록된 날짜가 없습니다.</div>';
+      return;
+    }
+
+    let tbl='<table class="bus-avg-tbl"><thead><tr><th>정류소</th><th>예정</th><th>실제 평균</th><th>차이</th></tr></thead><tbody>';
+    list.forEach(s=>{
+      const sched=isBack?(logAmPm==='am'?s.backS[0]:s.backS[1]):(logAmPm==='am'?s.outT[0]:s.outT[1]);
+      const av=avgMap[s.id];
+      let avgTxt='-', diffTxt='-';
+      if(av){
+        avgTxt='<b>'+av.hm+'</b> <span style="color:var(--tx3);font-size:.63rem">('+av.cnt+')</span>';
+        const sm=hmToMin(sched);
+        if(sm!==null){
+          const df=av.avgMin-sm;
+          if(df>0)diffTxt='<span class="bus-diff-late">+'+df+'분</span>';
+          else if(df<0)diffTxt='<span class="bus-diff-early">'+df+'분</span>';
+          else diffTxt='<span style="color:var(--tx3)">정시</span>';
+        }
+      }
+      tbl+='<tr><td>'+s.name+'</td><td style="color:var(--tx2)">'+sched+'</td><td>'+avgTxt+'</td><td>'+diffTxt+'</td></tr>';
+    });
+    tbl+='</tbody></table>';
+    $b('bus-log-avg-wrap').innerHTML=tbl;
+
+    const slot=dir+'_'+logAmPm;
+    let dHtml='';
+    dayRows.forEach(r=>{
+      let chips='';
+      list.forEach(s=>{
+        const rec=r.stops[s.id];
+        if(rec&&rec.t)chips+='<span class="bus-day-chip">'+s.name+'<b>'+rec.t+'</b></span>';
+      });
+      dHtml+='<div class="bus-day-row">'+
+        '<div class="bus-day-hdr"><span class="bus-day-dt">'+r.date+' ('+dowKo(r.date)+')</span>'+
+        '<button type="button" class="bus-day-del" data-dk="'+r.date+'" data-slot="'+slot+'">삭제</button></div>'+
+        '<div class="bus-day-chips">'+chips+'</div></div>';
+    });
+    $b('bus-log-days-wrap').innerHTML=dHtml;
+    $b('bus-log-days-wrap').querySelectorAll('.bus-day-del').forEach(btn=>{
+      btn.onclick=async()=>{
+        const dk=btn.dataset.dk, sl=btn.dataset.slot;
+        const ok=typeof askConfirm==='function'?await askConfirm(dk+' 도착 기록을 삭제할까요?'):confirm(dk+' 기록을 삭제할까요?');
+        if(!ok)return;
+        if(logsRef)await logsRef.child(dk+'/'+sl).remove().catch(()=>{});
+        if(logsData[dk]){delete logsData[dk][sl];if(!Object.keys(logsData[dk]).length)delete logsData[dk];}
+        saveLogsCache();
+        renderLogPanel();
+        if(typeof window.showToast==='function')window.showToast('기록이 삭제되었습니다');
+      };
+    });
+  }
+
+  function copyLogsCsv(){
+    const {dayRows}=calcStopAverages(dir,logAmPm);
+    if(!dayRows.length){
+      if(typeof window.showToast==='function')window.showToast('복사할 도착 기록이 없습니다');
+      return;
+    }
+    const list=getStops(dir);
+    const lines=[['날짜','요일',...list.map(s=>s.name)].join(',')];
+    dayRows.forEach(r=>{
+      lines.push([r.date,dowKo(r.date),...list.map(s=>(r.stops[s.id]&&r.stops[s.id].t)||'')].join(','));
+    });
+    const text=lines.join('\n');
+    const done=()=>{if(typeof window.showToast==='function')window.showToast('도착 기록(CSV)이 복사되었습니다');};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+    }else fallbackCopy(text,done);
+  }
+  function fallbackCopy(txt,cb){
+    const ta=document.createElement('textarea');
+    ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');cb();}catch(e){}
+    document.body.removeChild(ta);
+  }
+
   function locateOnRoute(lat,lng,d){
     const list=getStops(d), rad=Math.PI/180, cosL=Math.cos(lat*rad);
     let nearIdx=0, nearDist=Infinity;
@@ -8685,14 +8943,14 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
   }
 
   function updateZoom(){if(map)$b('bus-map').classList.toggle('zoom-low',map.getZoom()<13);}
-  function fitAll(){if(map)map.fitBounds(L.latLngBounds(STOPS.map(s=>[s.lat,s.lng])).pad(0.14));}
+  function fitAll(){if(map)map.fitBounds(L.latLngBounds(STOPS.map(s=>[s.lat,s.lng])).pad(0.15));}
 
   function renderMapStops(){
     if(!map)return;
     Object.values(stopMks).forEach(m=>map.removeLayer(m));stopMks={};
     if(gLine){map.removeLayer(gLine);gLine=null;}
     const list=getStops(dir), isBack=dir==='back';
-    gLine=L.polyline(list.map(s=>[s.lat,s.lng]),{color:isBack?'#0ca678':'#3182f6',weight:3,opacity:0.42,dashArray:'6,8'}).addTo(map);
+    gLine=L.polyline(list.map(s=>[s.lat,s.lng]),{color:isBack?'#0ca678':'#3182f6',weight:3,opacity:0.45,dashArray:'6,8'}).addTo(map);
     list.forEach((s,i)=>{
       const lblCls=s.term?'bus-stop-lbl term':(s.major?'bus-stop-lbl':'bus-stop-lbl minor');
       const icon=L.divIcon({
@@ -8725,6 +8983,9 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       $b('bus-rsum-desc').textContent='정류소를 누르면 지도에서 위치를 확인할 수 있습니다.';
     }
 
+    const amStats=calcStopAverages(dir,'am').avgMap;
+    const pmStats=calcStopAverages(dir,'pm').avgMap;
+
     let html='';
     list.forEach((s,i)=>{
       const isAt=loc&&loc.mode==='at'&&loc.index===i;
@@ -8733,9 +8994,13 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       if(i===0)tags+='<span class="bus-stag">기점</span>';
       if(i===list.length-1)tags+='<span class="bus-stag">종점</span>';
       if(isAt)tags+='<span class="bus-stag live">'+(loc.distanceM<=220?'정류소 인근':'약 '+fmtD(loc.distanceM))+'</span>';
-      const times=isBack
+      let times=isBack
         ?'<span class="bus-tchip">교대 <strong>'+s.backS[0]+'</strong> · <strong>'+s.backS[1]+'</strong></span><span class="bus-tchip">통상 <strong>'+s.backR[0]+'</strong> (금 <strong>'+s.backR[1]+'</strong>)</span>'
         :'<span class="bus-tchip">오전 <strong>'+s.outT[0]+'</strong></span><span class="bus-tchip">오후 <strong>'+s.outT[1]+'</strong></span>';
+      const avAm=amStats[s.id], avPm=pmStats[s.id];
+      if(avAm)times+='<span class="bus-tchip avg">실측 오전 '+avAm.hm+' ('+avAm.cnt+')</span>';
+      if(avPm)times+='<span class="bus-tchip avg">실측 오후 '+avPm.hm+' ('+avPm.cnt+')</span>';
+
       html+='<div class="bus-srow'+(isAt?' near':'')+(isPass?' passed':'')+'" data-id="'+s.id+'">'+
         '<div class="bus-snode'+(s.term?' term':'')+'">'+(i+1)+'</div>'+
         '<div class="bus-sinfo"><div><span class="bus-sname">'+s.name+'</span>'+tags+'</div>'+
@@ -8762,6 +9027,16 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     });
   }
 
+  function setLogsView(on){
+    showLogs=!!on;
+    $b('bus-log-toggle').classList.toggle('on',showLogs);
+    $b('bus-log-toggle').textContent=showLogs?'노선도':'도착 기록';
+    $b('bus-stop-list').style.display=showLogs?'none':'block';
+    $b('bus-log-panel').classList.toggle('active',showLogs);
+    if(showLogs)renderLogPanel();
+    else renderTimeline();
+  }
+
   function switchSub(t,onMapReady){
     subTab=t;const isMap=t==='map';
     $b('bus-tab-map').classList.toggle('active',isMap);
@@ -8773,7 +9048,8 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
         if(map)setTimeout(()=>{map.invalidateSize();if(onMapReady)onMapReady();},80);
       });
     }else{
-      renderTimeline();
+      if(showLogs)renderLogPanel();
+      else renderTimeline();
     }
   }
 
@@ -8784,23 +9060,24 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     $b('bus-dir-back').classList.toggle('active',isBack);
     $b('bus-route-sub').textContent=isBack?'발전소(영흥순대국) → 배곧 롯데마트':'배곧 롯데마트 → 발전소(영흥순대국)';
     if(map)renderMapStops();
-    renderTimeline();
+    if(showLogs)renderLogPanel();
+    else renderTimeline();
   }
 
   function renderViewer(){
     const d=latest;
     if(sharing&&d&&d.sessionId&&d.sessionId!==SESS&&isLive(d))stopShare('다른 탑승자가 공유를 이어받음',true);
+    if(!isBusPageOn())return;
     if(!d||typeof d.lat!=='number'||typeof d.lng!=='number'){
       $b('bus-dot').className='bus-dot';
       $b('bus-st-title').textContent='운행 정보 없음';
       $b('bus-st-sub').textContent='현재 위치를 공유 중인 탑승자가 없습니다.';
       $b('bus-pill').className='bus-pill';$b('bus-pill').textContent='대기 중';
-      if(subTab==='route')renderTimeline();
+      if(subTab==='route'&&!showLogs)renderTimeline();
       return;
     }
     const now=Date.now(), ageMin=d.updatedAt?(now-d.updatedAt)/60000:999;
     const live=isLive(d), stale=ageMin>STALE_MIN;
-    if(live&&d.direction&&!dirManual&&!sharing&&d.direction!==dir)setDir(d.direction);
     const activeDir=d.direction||dir;
 
     if(map){
@@ -8810,7 +9087,7 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       });
       if(busMk){busMk.setLatLng([d.lat,d.lng]);busMk.setIcon(icon);}
       else busMk=L.marker([d.lat,d.lng],{icon,zIndexOffset:200}).addTo(map);
-      if(!centered&&live&&(!bounds||bounds.contains([d.lat,d.lng]))){map.setView([d.lat,d.lng],14);centered=true;}
+      if(!centered&&live&&(!viewBounds||viewBounds.contains([d.lat,d.lng]))){map.setView([d.lat,d.lng],14);centered=true;}
     }
 
     const loc=locateOnRoute(d.lat,d.lng,activeDir), ago=fmtAgo(d.updatedAt);
@@ -8829,10 +9106,10 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       $b('bus-pill').className='bus-pill stale';$b('bus-pill').textContent='지연됨';
     }else{
       $b('bus-dot').className='bus-dot live';$b('bus-st-title').textContent=dTxt+' · '+posTxt;
-      $b('bus-st-sub').textContent='업데이트: '+ago+' (±'+(d.accuracy||0)+'m)';
+      $b('bus-st-sub').textContent='업데이트: '+ago+' (±'+(d.accuracy||0)+'m)'+(activeDir!==dir?' · 탭하여 전환':'');
       $b('bus-pill').className='bus-pill live';$b('bus-pill').textContent='운행 중';
     }
-    if(subTab==='route')renderTimeline();
+    if(subTab==='route'&&!showLogs)renderTimeline();
   }
 
   function ensureLeaflet(cb){
@@ -8867,9 +9144,35 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       if(!mapInited){
         try{
           mapInited=true;
-          bounds=L.latLngBounds([37.20,126.40],[37.41,126.80]);
-          map=L.map('bus-map',{zoomControl:false,minZoom:11,maxZoom:16,maxBounds:bounds,maxBoundsViscosity:1.0}).setView([37.31,126.59],11);
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:16,bounds,keepBuffer:0,updateWhenIdle:true,updateWhenZooming:false,attribution:'&copy; OpenStreetMap'}).addTo(map);
+          viewBounds=L.latLngBounds([36.88,126.12],[37.74,127.08]);
+          detailBounds=L.latLngBounds([37.21,126.42],[37.39,126.77]);
+          map=L.map('bus-map',{
+            zoomControl:false,
+            minZoom:10,
+            maxZoom:16,
+            maxBounds:viewBounds,
+            maxBoundsViscosity:0.9
+          }).setView([37.305,126.595],10);
+
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            maxNativeZoom:10,
+            maxZoom:16,
+            bounds:viewBounds,
+            keepBuffer:0,
+            updateWhenIdle:true,
+            updateWhenZooming:false,
+            attribution:'&copy; OpenStreetMap'
+          }).addTo(map);
+
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            minZoom:11,
+            maxZoom:16,
+            bounds:detailBounds,
+            keepBuffer:0,
+            updateWhenIdle:true,
+            updateWhenZooming:false
+          }).addTo(map);
+
           map.on('zoomend',updateZoom);
           renderMapStops();
           renderViewer();
@@ -8891,8 +9194,10 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       const app=window.firebase.apps.length?window.firebase.app():window.firebase.initializeApp(BUS_FB_CFG);
       const db=window.firebase.database(app);
       busRef=db.ref('buses/'+BUS_DB_KEY);
+      logsRef=db.ref('busLogs/'+BUS_DB_KEY);
       fbBound=true;
       busRef.on('value',snap=>{latest=snap.val();renderViewer();});
+      loadLogsFromDb(false);
       db.ref('.info/connected').on('value',snap=>{
         if(snap.val()===true){
           hasConnOnce=true;
@@ -8902,7 +9207,7 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
           showB('네트워크 연결이 끊어졌습니다. 마지막 확인 위치를 표시합니다.',true,true);
         }
       });
-      if(!viewIv)viewIv=setInterval(renderViewer,30000);
+      if(!viewIv)viewIv=setInterval(()=>{if(isBusPageOn())renderViewer();},30000);
     }catch(e){showB('서버 연결 오류: '+e.message,true);}
   }
 
@@ -8937,9 +9242,9 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
 
     fetchLoc(pos=>{
       const {latitude:lat,longitude:lng,accuracy}=pos.coords, now=Date.now();
+      const ds0=distM(lat,lng,START_PT[0],START_PT[1]), de0=distM(lat,lng,END_PT[0],END_PT[1]);
       if(!dirManual){
-        const ds=distM(lat,lng,START_PT[0],START_PT[1]), de=distM(lat,lng,END_PT[0],END_PT[1]);
-        const autoDir=ds<DETECT_M&&ds<de?'out':(de<DETECT_M&&de<ds?'back':detectTimeDir());
+        const autoDir=ds0<DETECT_M&&ds0<de0?'out':(de0<DETECT_M&&de0<ds0?'back':detectTimeDir());
         setDir(autoDir);
       }
       busRef.transaction(cur=>{
@@ -8949,10 +9254,13 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
         $b('bus-share-btn').disabled=false;
         if(err){setShareBtn(false);return showB('공유 오류: '+err.message,true);}
         if(!committed){setShareBtn(false);return showB('이미 다른 탑승자가 버스 위치를 공유 중입니다.',false);}
-        sharing=true;startedAt=now;lastSent=now;setShareBtn(true);keepAwake();
+        sharing=true;startedAt=now;lastSent=now;loggedStops={};arrHitStart=0;arrHitEnd=0;setShareBtn(true);keepAwake();
         busRef.onDisconnect().update({sharing:false}).catch(()=>{});
-        const dest=dir==='back'?START_PT:END_PT;
-        arrArmed=distM(lat,lng,dest[0],dest[1])>ARRIVAL_M;
+
+        armStart=ds0>LEAVE_ARM_M;
+        armEnd=de0>LEAVE_ARM_M;
+        if(accuracy<=ARR_ACC_M)recordStopArrivals(lat,lng,now);
+
         if(maxT)clearTimeout(maxT);
         maxT=setTimeout(()=>{if(sharing)stopShare('90분 경과');},MAX_MIN*60000);
         watchId=navigator.geolocation.watchPosition(p=>{
@@ -8961,9 +9269,26 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
           const t=Date.now(),{latitude:la,longitude:ln,accuracy:ac}=p.coords;
           if(ac>MAX_ACC_M)return;
           if(t-startedAt>MAX_MIN*60000)return stopShare('90분 경과');
-          const dst=dir==='back'?START_PT:END_PT, dDest=distM(la,ln,dst[0],dst[1]);
-          if(!arrArmed&&dDest>ARRIVAL_M)arrArmed=true;
-          else if(arrArmed&&dDest<=ARRIVAL_M)return stopShare('종점 도착');
+
+          if(ac<=ARR_ACC_M)recordStopArrivals(la,ln,t);
+
+          const dStart=distM(la,ln,START_PT[0],START_PT[1]);
+          const dEnd=distM(la,ln,END_PT[0],END_PT[1]);
+          if(!armStart&&dStart>LEAVE_ARM_M)armStart=true;
+          if(!armEnd&&dEnd>LEAVE_ARM_M)armEnd=true;
+          if(armStart&&dStart<=ARRIVAL_M&&ac<=ARR_ACC_M){
+            if(++arrHitStart>=2){
+              recordStopArrivals(la,ln,t,START_STOP.id);
+              return stopShare(START_STOP.name+' 도착',false,{lat:la,lng:ln,accuracy:Math.round(ac),isArrival:true,stopName:START_STOP.name});
+            }
+          }else{arrHitStart=0;}
+          if(armEnd&&dEnd<=ARRIVAL_M&&ac<=ARR_ACC_M){
+            if(++arrHitEnd>=2){
+              recordStopArrivals(la,ln,t,END_STOP.id);
+              return stopShare(END_STOP.name+' 도착',false,{lat:la,lng:ln,accuracy:Math.round(ac),isArrival:true,stopName:END_STOP.name});
+            }
+          }else{arrHitEnd=0;}
+
           if(t-lastSent<SEND_MS)return;
           lastSent=t;
           busRef.update({lat:la,lng:ln,accuracy:Math.round(ac),updatedAt:t,direction:dir,sharing:true}).catch(()=>{});
@@ -8972,20 +9297,30 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     },e=>{$b('bus-share-btn').disabled=false;setShareBtn(false);showB(errTxt(e),true);});
   }
 
-  function stopShare(reason,skipDb){
+  function stopShare(reason,skipDb,opts){
     if(window.Android&&typeof window.Android.stopShare==='function'){window.Android.stopShare();sharing=false;setShareBtn(false);return;}
     if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
     if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null;}
     if(maxT){clearTimeout(maxT);maxT=null;}
-    const was=sharing;sharing=false;setShareBtn(false);
+    const was=sharing;sharing=false;armStart=false;armEnd=false;arrHitStart=0;arrHitEnd=0;setShareBtn(false);
     if(busRef)busRef.onDisconnect().cancel().catch(()=>{});
     if(was&&busRef){
-      if(!skipDb&&isOwn())busRef.update({sharing:false,updatedAt:Date.now()}).catch(()=>{});
+      if(!skipDb&&isOwn()){
+        const payload={sharing:false,updatedAt:Date.now()};
+        if(opts&&typeof opts.lat==='number'){payload.lat=opts.lat;payload.lng=opts.lng;payload.accuracy=opts.accuracy||0;}
+        busRef.update(payload).catch(()=>{});
+      }
       if(reason){
-        const m='공유가 종료되었어요 (사유: '+reason+').';
-        showB(m,true);
+        const isArr=!!(opts&&opts.isArrival);
+        const msg=isArr
+          ?opts.stopName+'에 도착하여 위치 공유가 자동 종료되었습니다.'
+          :'공유가 종료되었어요 (사유: '+reason+').';
+        showB(msg,!isArr,false,isArr);
+        if(typeof window.showToast==='function'){
+          window.showToast(isArr?(opts.stopName+' 도착 · 위치 공유 종료'):('위치 공유 종료 ('+reason+')'));
+        }
         if(navigator.vibrate)navigator.vibrate([200,100,200]);
-        if('Notification' in window&&Notification.permission==='granted')new Notification('통근버스 위치 공유 종료',{body:m});
+        if('Notification' in window&&Notification.permission==='granted')new Notification('통근버스 위치 공유 종료',{body:msg});
       }
     }
   }
@@ -8996,13 +9331,24 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
     $b('bus-banner-close').onclick=hideB;
     $b('bus-tab-route').onclick=()=>switchSub('route');
     $b('bus-tab-map').onclick=()=>switchSub('map');
-    $b('bus-dir-out').onclick=()=>{dirManual=true;setDir('out');if(sharing&&busRef&&isOwn())busRef.update({direction:'out'});};
-    $b('bus-dir-back').onclick=()=>{dirManual=true;setDir('back');if(sharing&&busRef&&isOwn())busRef.update({direction:'back'});};
+    $b('bus-log-toggle').onclick=()=>setLogsView(!showLogs);
+    $b('bus-log-am').onclick=()=>{logAmPm='am';renderLogPanel();};
+    $b('bus-log-pm').onclick=()=>{logAmPm='pm';renderLogPanel();};
+    $b('bus-log-copy').onclick=copyLogsCsv;
+    $b('bus-log-refresh').onclick=()=>loadLogsFromDb(true);
+    $b('bus-dir-out').onclick=()=>{dirManual=true;loggedStops={};setDir('out');if(sharing&&busRef&&isOwn())busRef.update({direction:'out'});};
+    $b('bus-dir-back').onclick=()=>{dirManual=true;loggedStops={};setDir('back');if(sharing&&busRef&&isOwn())busRef.update({direction:'back'});};
+    $b('bus-stcard').onclick=()=>{
+      if(latest&&isLive(latest)&&latest.direction&&latest.direction!==dir){
+        dirManual=true;
+        setDir(latest.direction);
+      }
+    };
     $b('bus-btn-fit').onclick=fitAll;
     $b('bus-btn-bus').onclick=()=>{
       if(map&&latest&&typeof latest.lat==='number'){
         const ll=[latest.lat,latest.lng];
-        if(bounds&&!bounds.contains(ll))showB('버스 위치가 시흥~영흥 노선 구역 밖에 있습니다.',false);
+        if(viewBounds&&!viewBounds.contains(ll))showB('버스 위치가 지도 표시 구역 밖에 있습니다.',false);
         else map.setView(ll,15);
       }else showB('표시할 버스 위치가 아직 없습니다.',false);
     };
@@ -9011,14 +9357,14 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
       fetchLoc(p=>{
         hideB();if(!map)return;
         const ll=[p.coords.latitude,p.coords.longitude];
-        if(bounds&&!bounds.contains(ll))return showB('현재 위치가 시흥~영흥 노선 구역 밖에 있습니다.',false);
+        if(viewBounds&&!viewBounds.contains(ll))return showB('현재 위치가 지도 표시 구역 밖에 있습니다.',false);
         if(!myMk)myMk=L.circleMarker(ll,{radius:7,fillColor:'#191f28',color:'#fff',weight:2.5,fillOpacity:.95}).addTo(map);
         else myMk.setLatLng(ll);
         map.setView(ll,15);
       },e=>showB(errTxt(e),true));
     };
     $b('bus-share-btn').onclick=()=>sharing?stopShare():startShare();
-    setDir(dir);
+    setDir('out');
   }
 
   window.addEventListener('pagehide',()=>{
@@ -9028,13 +9374,20 @@ else{window.addEventListener('fbReady',onFbReady,{once:true});setTimeout(()=>{if
   });
 
   window.openBusTab=function(){
+    window.scrollTo(0,0);
     bindUI();
     initFb(0);
-    if(subTab==='map'&&map)setTimeout(()=>map.invalidateSize(),80);
-    else renderTimeline();
+    setLogsView(false);
+    if(!sharing){
+      dirManual=false;
+      setDir('out');
+    }
+    switchSub('route');
+    renderViewer();
   };
 })();
 </script>
 <!-- === 통근버스 탭 원클릭 통합 블록 끝 === -->
+
 </body>
 </html>
